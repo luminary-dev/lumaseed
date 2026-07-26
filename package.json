@@ -6,11 +6,12 @@
   "description": "Self-hosted torrent downloader with a browser UI — no speed caps, no size limits",
   "scripts": {
     "start": "node server.js",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "test": "node test/e2e.mjs"
   },
   "dependencies": {
-    "@fontsource-variable/geist": "^5.3.0",
-    "@fontsource-variable/geist-mono": "^5.3.0",
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@fontsource-variable/outfit": "^5.3.0",
     "@phosphor-icons/web": "^2.1.2",
     "express": "^4.21.2",
     "multer": "^1.4.5-lts.2",

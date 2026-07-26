@@ -6,7 +6,7 @@ import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const DOWNLOAD_DIR = process.env.DOWNLOAD_DIR || path.join(__dirname, 'downloads')
+const DOWNLOAD_DIR = path.resolve(process.env.DOWNLOAD_DIR || path.join(__dirname, 'downloads'))
 const PORT = process.env.PORT || 3456
 
 fs.mkdirSync(DOWNLOAD_DIR, { recursive: true })
@@ -39,8 +39,8 @@ const app = express()
 app.use(express.json())
 app.use(express.static(path.join(__dirname, 'public')))
 // Self-hosted fonts and icons — the UI works fully offline.
-app.use('/assets/geist', express.static(path.join(__dirname, 'node_modules/@fontsource-variable/geist')))
-app.use('/assets/geist-mono', express.static(path.join(__dirname, 'node_modules/@fontsource-variable/geist-mono')))
+app.use('/assets/outfit', express.static(path.join(__dirname, 'node_modules/@fontsource-variable/outfit')))
+app.use('/assets/jetbrains-mono', express.static(path.join(__dirname, 'node_modules/@fontsource-variable/jetbrains-mono')))
 app.use('/assets/phosphor', express.static(path.join(__dirname, 'node_modules/@phosphor-icons/web/src')))
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } })
@@ -57,29 +57,51 @@ function safe(fn, fallback = 0) {
   }
 }
 
+// Progress, percentage, and ETA are computed here from verified byte counts
+// rather than trusted from webtorrent's derived getters, and clamped so a
+// transient library inconsistency can never surface as >100% or negative.
 function torrentInfo(t) {
+  const done = !!t.done
+  const length = Math.max(0, safe(() => t.length))
+  let downloaded = Math.max(0, safe(() => t.downloaded))
+  if (length) downloaded = Math.min(downloaded, length)
+  if (done && length) downloaded = length
+  const progress = done ? 1 : length ? downloaded / length : 0
+  const downloadSpeed = Math.max(0, safe(() => t.downloadSpeed))
+  const uploadSpeed = Math.max(0, safe(() => t.uploadSpeed))
+  // ETA from remaining bytes over current (smoothed) speed; null = unknown.
+  const timeRemaining = done ? 0
+    : (length && downloadSpeed > 0) ? ((length - downloaded) / downloadSpeed) * 1000
+    : null
+
   return {
     infoHash: t.infoHash,
     name: t.name || null,
     magnetURI: safe(() => t.magnetURI, null),
-    progress: safe(() => t.progress),
-    downloaded: safe(() => t.downloaded),
-    uploaded: safe(() => t.uploaded),
-    length: safe(() => t.length),
-    downloadSpeed: safe(() => t.downloadSpeed),
-    uploadSpeed: safe(() => t.uploadSpeed),
+    progress,
+    downloaded,
+    uploaded: Math.max(0, safe(() => t.uploaded)),
+    length,
+    downloadSpeed,
+    uploadSpeed,
     numPeers: safe(() => t.numPeers),
-    timeRemaining: safe(() => t.timeRemaining, null),
-    done: t.done,
+    timeRemaining,
+    done,
     paused: t.paused,
     ready: t.ready,
-    files: t.files.map((f, i) => ({
-      index: i,
-      name: f.name,
-      path: f.path,
-      length: f.length,
-      progress: safe(() => f.progress)
-    }))
+    files: t.files.map((f, i) => {
+      const fDone = done || !!f.done
+      const fProgress = fDone ? 1 : Math.min(1, Math.max(0, safe(() => f.progress)))
+      return {
+        index: i,
+        name: f.name,
+        path: f.path,
+        absPath: path.join(DOWNLOAD_DIR, f.path),
+        length: f.length,
+        progress: fProgress,
+        done: fDone
+      }
+    })
   }
 }
 
@@ -160,8 +182,9 @@ app.get('/api/torrents/:infoHash/files/:index', (req, res) => {
   if (!t) return res.status(404).json({ error: 'Not found' })
   const file = t.files[Number(req.params.index)]
   if (!file) return res.status(404).json({ error: 'File not found' })
-  const progress = safe(() => file.progress)
-  if (progress < 1) {
+  const complete = t.done || file.done || safe(() => file.progress) >= 1
+  if (!complete) {
+    const progress = Math.min(1, Math.max(0, safe(() => file.progress)))
     return res.status(409).json({ error: `File is ${(progress * 100).toFixed(1)}% complete — not downloadable yet` })
   }
   res.download(path.join(DOWNLOAD_DIR, file.path), file.name)
@@ -176,7 +199,12 @@ app.get('/api/status', (_req, res) => {
   })
 })
 
-app.listen(PORT, () => {
+const httpServer = app.listen(PORT, () => {
   console.log(`TorrentBox running at http://localhost:${PORT}`)
   console.log(`Saving downloads to ${DOWNLOAD_DIR}`)
+})
+// Failing to bind the port is fatal — never survive as a zombie process.
+httpServer.on('error', (err) => {
+  console.error(`[fatal] could not start server: ${err.message}`)
+  process.exit(1)
 })

@@ -3,283 +3,377 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TorrentBox</title>
-<link rel="stylesheet" href="/assets/geist/index.css">
-<link rel="stylesheet" href="/assets/geist-mono/index.css">
+<title>torrentbox</title>
+<script>
+  // Set theme before first paint — same pattern as the Luminary landing page.
+  (function () {
+    var t = localStorage.getItem('torrentbox-theme')
+    if (t !== 'light' && t !== 'dark') {
+      t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+    }
+    document.documentElement.setAttribute('data-theme', t)
+  })()
+</script>
+<link rel="stylesheet" href="/assets/outfit/index.css">
+<link rel="stylesheet" href="/assets/jetbrains-mono/index.css">
 <link rel="stylesheet" href="/assets/phosphor/regular/style.css">
 <style>
-  /*
-    Design system:
-    - Palette: zinc neutrals, one accent (muted sky), locked page-wide.
-      Green/amber appear only as functional status colors.
-    - Type: Geist (UI) + Geist Mono (numbers, hashes, stats).
-    - Radius scale: surfaces 12px, controls 8px, badges pill. No exceptions.
-    - Motion: functional only — progress width, hover/active feedback.
-  */
+  /* ============================================================
+     torrentbox — Luminary design language
+     Tokens ported from luminary-landing-page/app/globals.css:
+     lime accent, light/dark via [data-theme], Outfit + JetBrains
+     Mono, pill controls, chip badges, soft card surfaces.
+     ============================================================ */
   :root {
-    --bg: #09090b;
-    --surface: #111113;
-    --surface-2: #18181b;
-    --border: #27272a;
-    --border-soft: #1f1f23;
-    --text: #f4f4f5;
-    --text-2: #a1a1aa;
-    --text-3: #71717a;
-    --accent: #55b7e4;
-    --accent-text: #0a1218;
-    --ok: #34d399;
-    --warn: #d4a54c;
-    --danger: #e5645f;
-    --r-surface: 12px;
-    --r-control: 8px;
+    --bg:        #ffffff;
+    --off:       #f7f7f5;
+    --accent:    #84cc16;
+    --a-text:    #5a9e08;
+    --a-dim:     rgba(132,204,22,.09);
+    --a-border:  rgba(132,204,22,.28);
+    --text:      #0d0d0f;
+    --muted:     #6b7280;
+    --subtle:    #c4c4c8;
+    --border:    rgba(0,0,0,.07);
+    --border-hi: rgba(0,0,0,.13);
+    --sh:        0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+    --sh-md:     0 4px 20px rgba(0,0,0,.08),0 2px 6px rgba(0,0,0,.04);
+    --ease:      cubic-bezier(0.16,1,0.3,1);
+    --r:         1.1rem;
+    --particle:  132,204,22;
+    --on-accent: #0d0d0f;
+    --danger:    #dc2626;
+    --danger-dim: rgba(220,38,38,.09);
+    --warn:      #d97706;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { color-scheme: dark; }
+  [data-theme="dark"] {
+    --bg:        #0b0b0d;
+    --off:       #111113;
+    --accent:    #a3e635;
+    --a-text:    #a3e635;
+    --a-dim:     rgba(163,230,53,.08);
+    --a-border:  rgba(163,230,53,.2);
+    --text:      #f4f4f5;
+    --muted:     #71717a;
+    --subtle:    #3f3f46;
+    --border:    rgba(255,255,255,.06);
+    --border-hi: rgba(255,255,255,.11);
+    --sh:        none;
+    --sh-md:     none;
+    --particle:  163,230,53;
+    --danger:    #f87171;
+    --danger-dim: rgba(248,113,113,.09);
+    --warn:      #fbbf24;
+  }
+
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { color-scheme: light dark; }
   body {
+    font-family: 'Outfit Variable', 'Outfit', sans-serif;
     background: var(--bg);
     color: var(--text);
-    font-family: 'Geist Variable', system-ui, -apple-system, sans-serif;
-    font-size: 14px;
+    font-size: 15px;
     line-height: 1.5;
     min-height: 100dvh;
-    padding: 48px 20px 80px;
+    padding: 44px 20px 90px;
     -webkit-font-smoothing: antialiased;
+    transition: background .28s var(--ease), color .28s var(--ease);
   }
-  .mono { font-family: 'Geist Mono Variable', ui-monospace, 'SF Mono', monospace; }
-  .wrap { max-width: 780px; margin: 0 auto; }
+  .mono { font-family: 'JetBrains Mono Variable', 'JetBrains Mono', monospace; }
+  .wrap { max-width: 820px; margin: 0 auto; }
 
-  header {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-bottom: 32px;
-    gap: 16px;
+  a:focus-visible, button:focus-visible, input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 6px;
   }
-  h1 {
-    font-size: 20px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
+
+  /* ---- header ---- */
+  header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 34px; }
+  .logo { font-size: 1.35rem; font-weight: 800; letter-spacing: -.04em; }
+  .logo .dot { color: var(--accent); transition: color .28s; }
+  .head-right { display: flex; align-items: center; gap: 14px; }
+  #globalStats { font-size: .72rem; color: var(--muted); text-align: right; transition: color .28s; }
+
+  /* Theme toggle — neumorphic pill, ported from the landing page. */
+  .theme-toggle {
+    position: relative; width: 52px; height: 28px; flex-shrink: 0;
+    border: 1px solid var(--border); border-radius: 100px;
+    background: var(--off); cursor: pointer; padding: 0;
+    box-shadow: inset 2px 2px 5px rgba(0,0,0,.12), inset -2px -2px 5px rgba(255,255,255,.6);
+    transition: background .28s, border-color .28s, box-shadow .28s;
   }
-  h1 i { color: var(--accent); font-size: 18px; margin-right: 6px; vertical-align: -2px; }
-  #globalStats {
-    color: var(--text-3);
-    font-size: 12px;
-    text-align: right;
+  [data-theme="dark"] .theme-toggle {
+    box-shadow: inset 2px 2px 6px rgba(0,0,0,.55), inset -2px -2px 6px rgba(255,255,255,.04);
+  }
+  .theme-toggle:active { transform: scale(.96); }
+  .theme-toggle__knob {
+    position: absolute; top: 50%; left: 3px; transform: translateY(-50%);
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent); color: var(--on-accent);
+    display: flex; align-items: center; justify-content: center; font-size: 12px;
+    box-shadow: 0 2px 5px rgba(0,0,0,.28), 0 0 0 1px rgba(0,0,0,.04);
+    transition: transform .42s cubic-bezier(0.85,0.05,0.18,1.35), background .28s;
+  }
+  [data-theme="dark"] .theme-toggle__knob { transform: translate(22px,-50%); }
+  .theme-toggle .ph-moon { display: none; }
+  [data-theme="dark"] .theme-toggle .ph-sun { display: none; }
+  [data-theme="dark"] .theme-toggle .ph-moon { display: inline; }
+
+  /* ---- surfaces ---- */
+  .card {
+    background: var(--off);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    box-shadow: var(--sh);
+    transition: background .28s, border-color .28s, box-shadow .28s;
   }
 
   /* ---- add form ---- */
-  .add-box {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--r-surface);
-    padding: 20px;
-    margin-bottom: 28px;
-  }
+  .add-box { padding: 22px; margin-bottom: 26px; }
   .field-label {
-    display: block;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-2);
-    margin-bottom: 8px;
+    display: block; font-size: .72rem; font-weight: 700;
+    letter-spacing: .09em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 10px; transition: color .28s;
   }
-  .add-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+  .add-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
   input[type="text"] {
     background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--r-control);
+    border: 1px solid var(--border-hi);
+    border-radius: 100px;
     color: var(--text);
-    padding: 10px 12px;
-    font-size: 13.5px;
-    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    padding: .62rem 1.1rem;
+    font-size: .82rem;
+    font-family: 'JetBrains Mono Variable', 'JetBrains Mono', monospace;
     outline: none;
-    transition: border-color .15s;
     min-width: 0;
+    transition: border-color .2s, background .28s, color .28s;
   }
-  input[type="text"]::placeholder { color: var(--text-3); }
-  input[type="text"]:focus-visible { border-color: var(--accent); }
-  button {
-    font-family: inherit;
-    font-size: 13.5px;
-    font-weight: 500;
-    border-radius: var(--r-control);
-    border: 1px solid transparent;
-    padding: 10px 16px;
-    cursor: pointer;
-    transition: background .15s, color .15s, border-color .15s, transform .1s;
+  input[type="text"]::placeholder { color: var(--subtle); }
+  input[type="text"]:focus-visible { border-color: var(--accent); outline: none; }
+  button { font-family: inherit; cursor: pointer; }
+  .btn-accent {
+    display: inline-flex; align-items: center; gap: .5rem; justify-content: center;
+    background: var(--accent); color: var(--on-accent);
+    font-size: .875rem; font-weight: 700; padding: .62rem 1.4rem;
+    border-radius: 100px; border: none;
+    transition: background .28s, transform .25s var(--ease), box-shadow .25s;
   }
-  button:active { transform: scale(0.98); }
-  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .btn-primary { background: var(--accent); color: var(--accent-text); }
-  .btn-primary:hover { background: #6fc3e9; }
+  .btn-accent:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(var(--particle),.3); }
+  .btn-accent:active { transform: scale(.97); }
+  .btn-pill {
+    display: inline-flex; align-items: center; gap: .45rem; justify-content: center;
+    background: var(--text); color: var(--bg);
+    font-size: .845rem; font-weight: 700; padding: .56rem 1.25rem;
+    border-radius: 100px; border: none;
+    transition: background .28s, color .28s, transform .22s var(--ease), box-shadow .22s;
+  }
+  .btn-pill:hover { background: var(--accent); color: var(--on-accent); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(var(--particle),.3); }
+  .btn-pill:active { transform: scale(.97); }
+  .btn-pill.danger { background: var(--danger); color: #fff; }
+  .btn-pill.danger:hover { background: var(--danger); filter: brightness(1.08); box-shadow: 0 6px 20px rgba(220,38,38,.25); }
+  .btn-ghost {
+    display: inline-flex; align-items: center; gap: .45rem;
+    background: none; border: none;
+    color: var(--muted); font-size: .845rem; font-weight: 500; padding: .56rem 1rem;
+    transition: color .2s;
+  }
+  .btn-ghost:hover { color: var(--text); }
   .btn-icon {
-    background: transparent;
-    border-color: transparent;
-    color: var(--text-3);
-    padding: 6px 8px;
-    font-size: 15px;
-    line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: transparent; border: 1px solid transparent;
+    color: var(--muted); font-size: 15px;
+    transition: color .2s, background .2s, border-color .2s, transform .15s;
   }
-  .btn-icon:hover { color: var(--text); background: var(--surface-2); }
-  .btn-icon.danger:hover { color: var(--danger); }
+  .btn-icon:hover { color: var(--text); background: var(--bg); border-color: var(--border-hi); }
+  .btn-icon:active { transform: scale(.92); }
+  .btn-icon.danger:hover { color: var(--danger); background: var(--danger-dim); }
 
   .dropzone {
     margin-top: 12px;
-    border: 1px dashed var(--border);
-    border-radius: var(--r-control);
-    padding: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    color: var(--text-3);
-    font-size: 13px;
+    border: 1px dashed var(--border-hi);
+    border-radius: calc(var(--r) - 6px);
+    padding: 15px;
+    display: flex; align-items: center; justify-content: center; gap: 9px;
+    color: var(--muted); font-size: .845rem;
     cursor: pointer;
-    transition: border-color .15s, color .15s, background .15s;
+    transition: border-color .2s, color .2s, background .2s;
   }
-  .dropzone i { font-size: 16px; }
-  .dropzone:hover { color: var(--text-2); border-color: var(--text-3); }
-  .dropzone.drag { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent); }
-  .msg { margin-top: 10px; font-size: 13px; min-height: 20px; }
+  .dropzone i { font-size: 17px; }
+  .dropzone:hover { color: var(--text); border-color: var(--subtle); }
+  .dropzone.drag { border-color: var(--accent); color: var(--a-text); background: var(--a-dim); }
+  .msg { margin-top: 12px; font-size: .845rem; min-height: 21px; transition: color .28s; }
   .msg.err { color: var(--danger); }
-  .msg.ok { color: var(--text-2); }
+  .msg.ok { color: var(--a-text); }
 
   /* ---- torrent list ---- */
-  .list {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--r-surface);
-    overflow: hidden;
-  }
-  .row { padding: 16px 20px; }
-  .row + .row { border-top: 1px solid var(--border-soft); }
-  .row-head {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .t-name {
-    font-weight: 500;
-    font-size: 14px;
-    word-break: break-all;
-    flex: 1;
-    min-width: 0;
-  }
-  .t-name.pending { color: var(--text-3); font-weight: 400; }
-  .t-actions { display: flex; gap: 2px; flex-shrink: 0; }
+  .list { overflow: hidden; }
+  .row { padding: 18px 22px; }
+  .row + .row { border-top: 1px solid var(--border); }
+  .row-head { display: flex; align-items: center; gap: 12px; }
+  .t-name { font-weight: 600; font-size: .95rem; word-break: break-all; flex: 1; min-width: 0; letter-spacing: -.01em; }
+  .t-name.pending { color: var(--muted); font-weight: 400; font-size: .8rem; }
+  .t-actions { display: flex; gap: 4px; flex-shrink: 0; }
 
-  .badge {
+  /* Chip badges — landing-page .chip family. */
+  .chip {
     flex-shrink: 0;
-    font-size: 11px;
-    font-weight: 500;
-    padding: 2px 9px;
-    border-radius: 999px;
-    letter-spacing: 0.01em;
+    display: inline-flex; align-items: center; gap: .42rem;
+    font-size: .62rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+    padding: .24rem .7rem;
+    border: 1px solid var(--a-border); border-radius: 100px;
+    background: var(--a-dim); color: var(--a-text);
+    transition: color .28s, border-color .28s, background .28s;
   }
-  .badge.dl { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
-  .badge.done { color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
-  .badge.stalled { color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
-  .badge.paused { color: var(--text-3); background: var(--surface-2); }
+  .chip::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); flex-shrink: 0; transition: background .28s; }
+  .chip.live::before { animation: pulse-ring 2.2s ease-in-out infinite; }
+  @keyframes pulse-ring {
+    0%   { box-shadow: 0 0 0 0 rgba(var(--particle),.45); }
+    70%  { box-shadow: 0 0 0 6px rgba(var(--particle),0); }
+    100% { box-shadow: 0 0 0 0 rgba(var(--particle),0); }
+  }
+  .chip.quiet { border-color: var(--border-hi); background: transparent; color: var(--muted); }
+  .chip.quiet::before { background: var(--warn); }
+  .chip.paused::before { background: var(--subtle); animation: none; }
 
   .bar {
-    height: 3px;
-    background: var(--surface-2);
-    border-radius: 999px;
-    overflow: hidden;
-    margin: 12px 0 10px;
+    height: 4px; border-radius: 100px; overflow: hidden;
+    background: color-mix(in srgb, var(--text) 8%, transparent);
+    margin: 13px 0 10px;
   }
   .bar > div {
-    height: 100%;
+    height: 100%; border-radius: 100px;
     background: var(--accent);
-    transition: width .6s ease;
+    box-shadow: 0 0 10px 0 rgba(var(--particle),.55);
+    transition: width .6s var(--ease), background .28s;
   }
-  .bar.done > div { background: var(--ok); }
 
   .t-stats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px 16px;
-    color: var(--text-3);
-    font-size: 12px;
+    display: flex; flex-wrap: wrap; gap: 4px 15px;
+    color: var(--muted); font-size: .7rem;
+    transition: color .28s;
   }
-  .t-stats .em { color: var(--text-2); }
+  .t-stats .em { color: var(--text); font-weight: 600; transition: color .28s; }
 
-  details { margin-top: 10px; }
+  details { margin-top: 11px; }
   summary {
-    color: var(--text-3);
-    font-size: 12.5px;
-    cursor: pointer;
-    user-select: none;
-    width: fit-content;
+    color: var(--muted); font-size: .78rem; cursor: pointer;
+    user-select: none; width: fit-content; transition: color .2s;
   }
-  summary:hover { color: var(--text-2); }
+  summary:hover { color: var(--text); }
   .file-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px 0;
-    font-size: 13px;
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 10px 0;
   }
-  .file-row + .file-row { border-top: 1px solid var(--border-soft); }
-  .file-row:first-of-type { margin-top: 6px; }
-  .file-name { flex: 1; min-width: 0; word-break: break-all; color: var(--text-2); }
-  .file-meta { flex-shrink: 0; color: var(--text-3); font-size: 12px; }
-  .file-dl {
+  .file-row + .file-row { border-top: 1px solid var(--border); }
+  .file-row:first-of-type { margin-top: 8px; }
+  .file-info { flex: 1; min-width: 0; }
+  .file-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .file-name { font-size: .845rem; font-weight: 500; word-break: break-all; }
+  .file-meta { font-size: .68rem; color: var(--muted); flex-shrink: 0; }
+  .path-row { display: flex; align-items: center; gap: 6px; margin-top: 3px; min-width: 0; }
+  .file-path {
+    font-size: .66rem; color: var(--muted);
+    word-break: break-all;
+    user-select: all;              /* one click selects the whole path */
+    cursor: text;
+    transition: color .28s;
+  }
+  .copy-btn {
+    display: inline-flex; align-items: center;
+    background: none; border: none; padding: 2px;
+    color: var(--subtle); font-size: 13px;
+    transition: color .2s;
     flex-shrink: 0;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    color: var(--accent);
-    text-decoration: none;
-    font-size: 12.5px;
-    font-weight: 500;
+  }
+  .copy-btn:hover { color: var(--a-text); }
+  .copy-btn.copied { color: var(--a-text); }
+  .file-dl {
+    flex-shrink: 0; align-self: center;
+    display: inline-flex; align-items: center; gap: 5px;
+    color: var(--a-text); text-decoration: none;
+    font-size: .78rem; font-weight: 700;
   }
   .file-dl:hover { text-decoration: underline; }
 
-  /* ---- empty & loading states ---- */
-  .empty {
-    padding: 56px 20px;
-    text-align: center;
-  }
-  .empty i { font-size: 28px; color: var(--text-3); }
-  .empty p { margin-top: 12px; color: var(--text-2); font-weight: 500; }
-  .empty span { display: block; margin-top: 4px; color: var(--text-3); font-size: 13px; }
+  /* ---- empty & loading ---- */
+  .empty { padding: 64px 24px; text-align: center; }
+  .empty i { font-size: 30px; color: var(--subtle); transition: color .28s; }
+  .empty p { margin-top: 14px; font-weight: 600; }
+  .empty span { display: block; margin-top: 4px; color: var(--muted); font-size: .845rem; }
 
-  .skeleton { padding: 16px 20px; }
-  .skeleton + .skeleton { border-top: 1px solid var(--border-soft); }
+  .skeleton { padding: 18px 22px; }
+  .skeleton + .skeleton { border-top: 1px solid var(--border); }
   .sk-line {
-    height: 12px;
-    border-radius: 4px;
-    background: linear-gradient(90deg, var(--surface-2) 25%, #202024 50%, var(--surface-2) 75%);
+    height: 12px; border-radius: 6px;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--text) 7%, transparent) 25%, color-mix(in srgb, var(--text) 13%, transparent) 50%, color-mix(in srgb, var(--text) 7%, transparent) 75%);
     background-size: 200% 100%;
     animation: shimmer 1.4s infinite;
   }
   .sk-line.w60 { width: 60%; }
-  .sk-line.w35 { width: 35%; margin-top: 12px; }
+  .sk-line.w35 { width: 35%; margin-top: 13px; }
   @keyframes shimmer { to { background-position: -200% 0; } }
 
-  @media (prefers-reduced-motion: reduce) {
-    * { animation: none !important; transition: none !important; }
+  /* ---- modal (in-UI popups, cmdk-panel style) ---- */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    display: none;
+    align-items: flex-start; justify-content: center;
+    padding: 22vh 1rem 1rem;
+    background: rgba(10,10,12,.55);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   }
-  @media (max-width: 560px) {
-    body { padding: 28px 12px 60px; }
-    header { flex-direction: column; gap: 4px; }
-    #globalStats { text-align: left; }
-    .row { padding: 14px 14px; }
+  .modal-overlay.open { display: flex; animation: overlay-in .16s ease both; }
+  .modal-panel {
+    width: min(460px, 94vw);
+    background: var(--bg);
+    border: 1px solid var(--border-hi);
+    border-radius: calc(var(--r) + 4px);
+    box-shadow: 0 32px 90px -20px rgba(0,0,0,.5);
+    padding: 1.5rem 1.6rem 1.35rem;
+    animation: panel-in .2s var(--ease) both;
+  }
+  @keyframes overlay-in { from { opacity: 0; } }
+  @keyframes panel-in { from { opacity: 0; transform: translateY(-10px) scale(.985); } }
+  .modal-title { font-size: 1.02rem; font-weight: 700; letter-spacing: -.01em; }
+  .modal-body { margin-top: .45rem; font-size: .875rem; color: var(--muted); word-break: break-all; }
+  .modal-body strong { color: var(--text); font-weight: 600; }
+  .modal-actions {
+    margin-top: 1.35rem;
+    display: flex; gap: .6rem; justify-content: flex-end; flex-wrap: wrap;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+  @media (max-width: 600px) {
+    body { padding: 26px 12px 60px; }
+    header { flex-wrap: wrap; }
+    #globalStats { display: none; }
+    .row { padding: 15px 15px; }
+    .add-box { padding: 16px; }
+    .add-row { grid-template-columns: 1fr; }
   }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1><i class="ph ph-magnet-straight" aria-hidden="true"></i>TorrentBox</h1>
-    <div id="globalStats" class="mono" aria-live="polite"></div>
+    <div class="logo">torrentbox<span class="dot">.</span></div>
+    <div class="head-right">
+      <div id="globalStats" class="mono" aria-live="polite"></div>
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle light and dark theme">
+        <span class="theme-toggle__knob"><i class="ph ph-sun" aria-hidden="true"></i><i class="ph ph-moon" aria-hidden="true"></i></span>
+      </button>
+    </div>
   </header>
 
-  <section class="add-box" aria-label="Add a torrent">
-    <label class="field-label" for="magnetInput">Magnet link</label>
+  <section class="card add-box" aria-label="Add a torrent">
+    <label class="field-label" for="magnetInput">Add a torrent</label>
     <div class="add-row">
-      <input type="text" id="magnetInput" placeholder="magnet:?xt=urn:btih:…" spellcheck="false" autocomplete="off">
-      <button class="btn-primary" id="addBtn">Add torrent</button>
+      <input type="text" id="magnetInput" placeholder="magnet:?xt=urn:btih:…" spellcheck="false" autocomplete="off" aria-label="Magnet link">
+      <button class="btn-accent" id="addBtn"><i class="ph ph-magnet-straight" aria-hidden="true"></i>Add</button>
     </div>
     <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Upload a .torrent file">
       <i class="ph ph-upload-simple" aria-hidden="true"></i>
@@ -289,24 +383,41 @@
     <div class="msg" id="msg" role="status"></div>
   </section>
 
-  <div class="list" id="list">
+  <div class="card list" id="list">
     <div class="skeleton"><div class="sk-line w60"></div><div class="sk-line w35"></div></div>
     <div class="skeleton"><div class="sk-line w60"></div><div class="sk-line w35"></div></div>
   </div>
 </div>
 
+<!-- Remove-torrent confirmation — in-UI popup, no browser dialogs. -->
+<div class="modal-overlay" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-panel">
+    <div class="modal-title" id="modalTitle">Remove torrent</div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="modalCancel">Cancel</button>
+      <button class="btn-pill" id="modalKeep">Remove, keep files</button>
+      <button class="btn-pill danger" id="modalDelete">Remove and delete files</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const $ = (id) => document.getElementById(id)
-let loaded = false
 
+/* ---------- formatting ---------- */
 function fmtBytes(n) {
-  if (!n) return '0 B'
+  if (!n || n <= 0) return '0 B'
   const u = ['B', 'KB', 'MB', 'GB', 'TB']
   const i = Math.min(Math.floor(Math.log2(n) / 10), u.length - 1)
   return (n / 2 ** (10 * i)).toFixed(i ? 1 : 0) + ' ' + u[i]
 }
+function fmtPct(p) {
+  if (p >= 1) return '100%'
+  return (p * 100).toFixed(1) + '%'
+}
 function fmtEta(ms) {
-  if (!ms || !isFinite(ms) || ms <= 0) return '—'
+  if (ms === null || ms === undefined || !isFinite(ms) || ms < 0) return '—'
   const s = Math.round(ms / 1000)
   if (s < 60) return s + 's'
   if (s < 3600) return Math.floor(s / 60) + 'm ' + (s % 60) + 's'
@@ -317,18 +428,26 @@ function esc(s) {
   return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
 }
 
-function showMsg(text, ok) {
-  const el = $('msg')
-  el.textContent = text
-  el.className = 'msg ' + (ok ? 'ok' : 'err')
-  if (text) setTimeout(() => { if (el.textContent === text) el.textContent = '' }, 6000)
+/* ---------- theme ---------- */
+$('themeToggle').onclick = () => {
+  const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
+  document.documentElement.setAttribute('data-theme', cur)
+  localStorage.setItem('torrentbox-theme', cur)
 }
 
+/* ---------- api ---------- */
 async function api(url, opts) {
   const res = await fetch(url, opts)
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data.error || res.statusText)
   return data
+}
+
+function showMsg(text, ok) {
+  const el = $('msg')
+  el.textContent = text
+  el.className = 'msg ' + (ok ? 'ok' : 'err')
+  if (text) setTimeout(() => { if (el.textContent === text) el.textContent = '' }, 6000)
 }
 
 async function addMagnet() {
@@ -357,23 +476,67 @@ async function addFile(file) {
   } catch (e) { showMsg(e.message) }
 }
 
-async function action(hash, act) {
+async function pauseResume(hash, act) {
+  try { await api(`/api/torrents/${hash}/${act}`, { method: 'POST' }); refresh() }
+  catch (e) { showMsg(e.message) }
+}
+
+/* ---------- remove modal ---------- */
+let modalHash = null
+let modalReturnFocus = null
+
+function openRemoveModal(hash, name) {
+  modalHash = hash
+  modalReturnFocus = document.activeElement
+  $('modalBody').innerHTML = `Remove <strong>${esc(name || hash)}</strong>? You can keep the downloaded data on disk or delete it as well.`
+  $('modal').classList.add('open')
+  $('modalKeep').focus()
+}
+function closeModal() {
+  $('modal').classList.remove('open')
+  modalHash = null
+  if (modalReturnFocus && document.contains(modalReturnFocus)) modalReturnFocus.focus()
+}
+async function doRemove(deleteFiles) {
+  const hash = modalHash
+  closeModal()
+  if (!hash) return
   try {
-    if (act === 'remove') {
-      const del = confirm('Also delete the downloaded files from disk?\n\nOK deletes the files. Cancel keeps them.')
-      await api(`/api/torrents/${hash}?deleteFiles=${del}`, { method: 'DELETE' })
-    } else {
-      await api(`/api/torrents/${hash}/${act}`, { method: 'POST' })
-    }
+    await api(`/api/torrents/${hash}?deleteFiles=${deleteFiles}`, { method: 'DELETE' })
+    showMsg(deleteFiles ? 'Torrent removed and files deleted.' : 'Torrent removed. Files kept on disk.', true)
     refresh()
   } catch (e) { showMsg(e.message) }
 }
+$('modalCancel').onclick = closeModal
+$('modalKeep').onclick = () => doRemove(false)
+$('modalDelete').onclick = () => doRemove(true)
+$('modal').addEventListener('click', e => { if (e.target === $('modal')) closeModal() })
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('modal').classList.contains('open')) closeModal() })
 
-function badge(t) {
-  if (t.done) return '<span class="badge done">Complete</span>'
-  if (t.paused) return '<span class="badge paused">Paused</span>'
-  if (t.downloadSpeed > 1024) return '<span class="badge dl">Downloading</span>'
-  return '<span class="badge stalled">Searching for peers</span>'
+/* ---------- copy path ---------- */
+async function copyPath(btn, text) {
+  try {
+    await navigator.clipboard.writeText(text)
+  } catch {
+    const ta = document.createElement('textarea')
+    ta.value = text
+    document.body.appendChild(ta)
+    ta.select()
+    document.execCommand('copy')
+    ta.remove()
+  }
+  const icon = btn.querySelector('i')
+  icon.className = 'ph ph-check'
+  btn.classList.add('copied')
+  setTimeout(() => { icon.className = 'ph ph-copy'; btn.classList.remove('copied') }, 1400)
+}
+
+/* ---------- render ---------- */
+function chip(t) {
+  if (t.done) return '<span class="chip">Complete</span>'
+  if (t.paused) return '<span class="chip quiet paused">Paused</span>'
+  if (t.downloadSpeed > 1024) return '<span class="chip live">Downloading</span>'
+  return '<span class="chip quiet">Searching peers</span>'
 }
 
 function render(torrents) {
@@ -389,31 +552,39 @@ function render(torrents) {
   }
   const open = new Set([...list.querySelectorAll('details[open]')].map(d => d.dataset.hash))
   list.innerHTML = torrents.map(t => {
-    const pct = (t.progress * 100).toFixed(1)
     const name = t.name
       ? `<div class="t-name">${esc(t.name)}</div>`
       : `<div class="t-name pending mono">Fetching metadata · ${t.infoHash.slice(0, 12)}…</div>`
     const files = t.files.map(f => `
       <div class="file-row">
-        <span class="file-name">${esc(f.name)}</span>
-        <span class="file-meta mono">${fmtBytes(f.length)} · ${(f.progress * 100).toFixed(0)}%</span>
-        ${f.progress >= 1 ? `<a class="file-dl" href="/api/torrents/${t.infoHash}/files/${f.index}" download><i class="ph ph-download-simple" aria-hidden="true"></i>Save</a>` : ''}
+        <div class="file-info">
+          <div class="file-top">
+            <span class="file-name">${esc(f.name)}</span>
+            <span class="file-meta mono">${fmtBytes(f.length)} · ${fmtPct(f.progress)}</span>
+          </div>
+          <div class="path-row">
+            <code class="file-path mono">${esc(f.absPath)}</code>
+            <button class="copy-btn" data-copy="${esc(f.absPath)}" aria-label="Copy file path" title="Copy path"><i class="ph ph-copy" aria-hidden="true"></i></button>
+          </div>
+        </div>
+        ${f.done ? `<a class="file-dl" href="/api/torrents/${t.infoHash}/files/${f.index}" download><i class="ph ph-download-simple" aria-hidden="true"></i>Save</a>` : ''}
       </div>`).join('')
     return `
     <div class="row">
       <div class="row-head">
         ${name}
-        ${badge(t)}
+        ${chip(t)}
         <div class="t-actions">
           ${t.done ? '' : t.paused
-            ? `<button class="btn-icon" onclick="action('${t.infoHash}','resume')" aria-label="Resume" title="Resume"><i class="ph ph-play"></i></button>`
-            : `<button class="btn-icon" onclick="action('${t.infoHash}','pause')" aria-label="Pause" title="Pause"><i class="ph ph-pause"></i></button>`}
-          <button class="btn-icon danger" onclick="action('${t.infoHash}','remove')" aria-label="Remove" title="Remove"><i class="ph ph-trash"></i></button>
+            ? `<button class="btn-icon" data-act="resume" data-hash="${t.infoHash}" aria-label="Resume" title="Resume"><i class="ph ph-play"></i></button>`
+            : `<button class="btn-icon" data-act="pause" data-hash="${t.infoHash}" aria-label="Pause" title="Pause"><i class="ph ph-pause"></i></button>`}
+          <button class="btn-icon danger" data-act="remove" data-hash="${t.infoHash}" data-name="${esc(t.name || '')}" aria-label="Remove" title="Remove"><i class="ph ph-trash"></i></button>
         </div>
       </div>
-      <div class="bar ${t.done ? 'done' : ''}"><div style="width:${pct}%"></div></div>
+      <div class="bar"><div style="width:${(t.progress * 100).toFixed(2)}%"></div></div>
       <div class="t-stats mono">
-        <span class="em">${pct}%${t.length ? ' of ' + fmtBytes(t.length) : ''}</span>
+        <span class="em">${fmtPct(t.progress)}</span>
+        <span>${fmtBytes(t.downloaded)}${t.length ? ' / ' + fmtBytes(t.length) : ''}</span>
         <span>↓ ${fmtBytes(t.downloadSpeed)}/s</span>
         <span>↑ ${fmtBytes(t.uploadSpeed)}/s</span>
         <span>${t.numPeers} peer${t.numPeers === 1 ? '' : 's'}</span>
@@ -426,13 +597,26 @@ function render(torrents) {
   }).join('')
 }
 
+// Event delegation — survives the 1s re-render.
+$('list').addEventListener('click', e => {
+  const copy = e.target.closest('.copy-btn')
+  if (copy) { copyPath(copy, copy.dataset.copy); return }
+  const btn = e.target.closest('[data-act]')
+  if (!btn) return
+  if (btn.dataset.act === 'remove') openRemoveModal(btn.dataset.hash, btn.dataset.name)
+  else pauseResume(btn.dataset.hash, btn.dataset.act)
+})
+
 async function refresh() {
+  // Freeze updates while text is selected inside the list, so selecting a
+  // file path isn't wiped by the next poll re-render.
+  const sel = window.getSelection()
+  if (sel && !sel.isCollapsed && $('list').contains(sel.anchorNode)) return
+  if ($('modal').classList.contains('open')) return
   try {
     const [torrents, status] = await Promise.all([api('/api/torrents'), api('/api/status')])
-    loaded = true
     render(torrents)
-    $('globalStats').textContent =
-      `↓ ${fmtBytes(status.downloadSpeed)}/s · ↑ ${fmtBytes(status.uploadSpeed)}/s · ${status.downloadDir}`
+    $('globalStats').textContent = `↓ ${fmtBytes(status.downloadSpeed)}/s · ↑ ${fmtBytes(status.uploadSpeed)}/s`
   } catch {
     // Server restarting or unreachable — keep the last view and keep polling.
   }
