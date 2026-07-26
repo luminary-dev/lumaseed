@@ -46,6 +46,19 @@ Files download to the downloads directory. Once a file hits 100% you can also cl
 
 Pause / resume / remove per torrent. Removing asks whether to also delete the data from disk.
 
+## Speed
+
+The engine is configured for maximum throughput out of the box:
+
+- **No throttling anywhere** — download/upload limits are explicitly disabled.
+- **200 peer connections per torrent** (default is 55) and 10 parallel web-seed connections.
+- **TCP-first peer dialing** (patched) — stock webtorrent dials uTP first and burns ~40 seconds of timeouts per TCP-only peer before falling back; we dial TCP instantly and fall back to uTP instead, keeping uTP for the peers that need it.
+- **DHT with 4× lookup concurrency**, PEX, local-network discovery, and 13 public trackers on every torrent.
+- **Automatic router port mapping** (UPnP + NAT-PMP) for the peer port, so inbound peers can reach you — being connectable is the single biggest real-world speed factor. If your router doesn't support either, forward TCP+UDP `42069` manually.
+- **32 disk I/O threads** (`UV_THREADPOOL_SIZE`) so hashing and writing 10GB+ files doesn't queue behind 4 default threads.
+
+What's left that only you can control: your ISP line rate, VPNs that throttle P2P, Wi-Fi vs ethernet, and — above all — how many seeders the torrent has. A torrent's swarm upload capacity is a hard ceiling no client can exceed.
+
 ## Notes on dead / low-seed torrents
 
 - A torrent with **zero seeders and no complete peer swarm cannot be downloaded by anything** — the data simply isn't on the network.
@@ -73,7 +86,7 @@ Runs an end-to-end suite that seeds a locally-generated 150MB torrent, downloads
 ## Implementation notes
 
 - Node + Express + [webtorrent](https://github.com/webtorrent/webtorrent) v3 (full TCP/UDP peer support, DHT, PEX — not the browser-only WebRTC variant).
-- `patches/webtorrent+3.0.16.patch` fixes null-piece races in webtorrent's piece selector and progress getters that crash or corrupt progress when resuming a torrent with existing partial data (applied automatically via `patch-package` on `npm install`).
+- `patches/webtorrent+3.0.16.patch` (applied automatically via `patch-package` on `npm install`) fixes null-piece races in webtorrent's piece selector and progress getters that crash or corrupt progress when resuming partial data, and switches outgoing peer dialing to TCP-first with uTP fallback (stock is uTP-first with a ~40s penalty per TCP-only peer).
 - UI: dependency-free vanilla HTML/CSS/JS in the Luminary design language (Outfit + JetBrains Mono, lime accent, light/dark themes) with self-hosted fonts and Phosphor icons — works fully offline. Stats (progress, ETA, speeds) are computed server-side from verified byte counts and clamped, never trusted from library getters.
 - **No authentication built in.** Fine on localhost or a LAN you trust; put a reverse proxy with auth in front before exposing it further.
 

@@ -14,7 +14,7 @@ index 09c43b5..1da381a 100644
        } else {
          // "in progress" data
 diff --git a/node_modules/webtorrent/lib/torrent.js b/node_modules/webtorrent/lib/torrent.js
-index 771a87f..c6b0f92 100644
+index 771a87f..33fbefc 100644
 --- a/node_modules/webtorrent/lib/torrent.js
 +++ b/node_modules/webtorrent/lib/torrent.js
 @@ -220,7 +220,7 @@ export default class Torrent extends EventEmitter {
@@ -26,7 +26,21 @@ index 771a87f..c6b0f92 100644
          downloaded += (index === len - 1) ? this.lastPieceLength : this.pieceLength
        } else { // "in progress" data
          const piece = this.pieces[index]
-@@ -1700,7 +1700,7 @@ export default class Torrent extends EventEmitter {
+@@ -1060,9 +1060,11 @@ export default class Torrent extends EventEmitter {
+       return false
+     }
+ 
+-    // if the utp connection fails to connect, then it is replaced with a tcp connection to the same ip:port
++    // Dial TCP first: it connects instantly to the vast majority of peers,
++    // while uTP-first costs ~40s of timeouts+backoff per TCP-only peer.
++    // If TCP exhausts its retries, the peer is re-added as uTP (see below).
+ 
+-    const type = (this.client.utp && this._isIPv4(host)) ? 'utp' : 'tcp'
++    const type = 'tcp'
+     const wasAdded = !!this._addPeer(peer, type, source)
+ 
+     if (wasAdded) {
+@@ -1700,7 +1702,7 @@ export default class Torrent extends EventEmitter {
        let ptr = 0
  
        return index => {
@@ -35,3 +49,26 @@ index 771a87f..c6b0f92 100644
  
          let missing = self.pieces[index].missing
  
+@@ -2146,8 +2148,9 @@ export default class Torrent extends EventEmitter {
+       if (this.destroyed) return
+ 
+       if (peer.retries >= RECONNECT_WAIT.length) {
+-        if (this.client.utp) {
+-          const newPeer = this._addPeer(peer.addr, 'tcp', peer.source)
++        // TCP exhausted → try the peer over uTP once; uTP exhausted → give up.
++        if (this.client.utp && peer.type !== Peer.TYPE_UTP_OUTGOING) {
++          const newPeer = this._addPeer(peer.addr, 'utp', peer.source)
+           if (newPeer) newPeer.retries = 0
+         } else {
+           this._debug(
+@@ -2166,8 +2169,8 @@ export default class Torrent extends EventEmitter {
+ 
+       const reconnectTimeout = setTimeout(() => {
+         if (this.destroyed) return
+-        const host = addrToIPPort(peer.addr)[0]
+-        const type = (this.client.utp && this._isIPv4(host)) ? 'utp' : 'tcp'
++        // retry over the same transport; transport switch happens above
++        const type = peer.type === Peer.TYPE_UTP_OUTGOING ? 'utp' : 'tcp'
+         const newPeer = this._addPeer(peer.addr, type, peer.source)
+         if (newPeer) newPeer.retries = peer.retries + 1
+       }, ms)

@@ -20,14 +20,40 @@ const EXTRA_TRACKERS = [
   'udp://tracker.torrent.eu.org:451/announce',
   'udp://exodus.desync.com:6969/announce',
   'udp://tracker.theoks.net:6969/announce',
-  'http://tracker.opentrackr.org:1337/announce'
+  'udp://tracker.tiny-vps.com:6969/announce',
+  'udp://opentracker.io:6969/announce',
+  'udp://explodie.org:6969/announce',
+  'udp://tracker.dler.org:6969/announce',
+  'udp://tracker1.bt.moack.co.kr:80/announce',
+  'http://tracker.opentrackr.org:1337/announce',
+  'https://tracker.tamersunion.org:443/announce'
 ]
 
-// TORRENT_PORT gives Docker users a fixed port to map for incoming peers.
+// Fixed listen port (TORRENT_PORT) so it can be forwarded/mapped — being
+// connectable to inbound peers is the biggest real-world speed factor.
+const TORRENT_PORT = Number(process.env.TORRENT_PORT) || 42069
+
 const client = new WebTorrent({
-  maxConns: 150,
-  torrentPort: Number(process.env.TORRENT_PORT) || undefined
+  maxConns: 200,             // peer connections per torrent (default 55)
+  maxWebConns: 10,           // parallel web-seed connections (default 4)
+  downloadLimit: -1,         // explicitly unthrottled
+  uploadLimit: -1,
+  utp: true,                 // uTP alongside TCP — reaches peers TCP can't
+  dht: { concurrency: 64 },  // faster DHT lookups (default 16)
+  natUpnp: 'permanent',      // auto port-map on the router (UPnP)
+  natPmp: true,              // …and NAT-PMP — inbound peers = most speed
+  torrentPort: TORRENT_PORT
 })
+
+// Graceful shutdown: destroys the client, which also removes router port
+// mappings and announces our departure to trackers.
+function shutdown() {
+  const forceExit = setTimeout(() => process.exit(0), 3000)
+  forceExit.unref()
+  client.destroy(() => process.exit(0))
+}
+process.on('SIGINT', shutdown)
+process.on('SIGTERM', shutdown)
 client.on('error', (err) => console.error('[client]', err.message))
 
 // webtorrent has occasional internal races (e.g. piece-selection on resume).
@@ -57,13 +83,53 @@ function safe(fn, fallback = 0) {
   }
 }
 
-// Progress, percentage, and ETA are computed here from verified byte counts
-// rather than trusted from webtorrent's derived getters, and clamped so a
+// All progress below is BYTE-weighted, computed directly from the piece
+// bitfield — never from file counts and never from webtorrent's derived
+// getters. A 5MB file at 100% moves a 150MB torrent by ~3%, not by
+// "1 of 3 files".
+
+// Bytes of piece `i` that are actually on disk: the full piece when verified
+// (verified pieces are nulled in t.pieces), otherwise the received portion.
+function pieceHave(t, i) {
+  const pieceLength = t.pieceLength
+  const pLen = i === t.pieces.length - 1 ? t.lastPieceLength : pieceLength
+  const piece = t.pieces[i]
+  if ((t.bitfield && t.bitfield.get(i)) || !piece) return pLen
+  return Math.max(0, pLen - piece.missing)
+}
+
+// Total verified+received bytes for the whole torrent.
+function torrentDownloaded(t) {
+  if (!t.pieces || !t.pieces.length) return 0
+  let bytes = 0
+  for (let i = 0; i < t.pieces.length; i++) bytes += pieceHave(t, i)
+  return bytes
+}
+
+// Bytes on disk that fall inside one file's byte range. Boundary pieces
+// shared with neighbouring files contribute proportionally to the overlap.
+function fileDownloaded(t, f) {
+  if (!t.pieces || !t.pieces.length || !f.length) return 0
+  const pieceLength = t.pieceLength
+  const start = Math.floor(f.offset / pieceLength)
+  const end = Math.floor((f.offset + f.length - 1) / pieceLength)
+  let bytes = 0
+  for (let i = start; i <= end && i < t.pieces.length; i++) {
+    const pLen = i === t.pieces.length - 1 ? t.lastPieceLength : pieceLength
+    const pieceStart = i * pieceLength
+    const overlap = Math.min(f.offset + f.length, pieceStart + pLen) - Math.max(f.offset, pieceStart)
+    if (overlap <= 0) continue
+    bytes += pieceHave(t, i) * (overlap / pLen)
+  }
+  return Math.min(f.length, Math.round(bytes))
+}
+
+// Percentage and ETA are derived from the byte counts above and clamped so a
 // transient library inconsistency can never surface as >100% or negative.
 function torrentInfo(t) {
   const done = !!t.done
   const length = Math.max(0, safe(() => t.length))
-  let downloaded = Math.max(0, safe(() => t.downloaded))
+  let downloaded = Math.max(0, safe(() => torrentDownloaded(t)))
   if (length) downloaded = Math.min(downloaded, length)
   if (done && length) downloaded = length
   const progress = done ? 1 : length ? downloaded / length : 0
@@ -90,14 +156,16 @@ function torrentInfo(t) {
     paused: t.paused,
     ready: t.ready,
     files: t.files.map((f, i) => {
-      const fDone = done || !!f.done
-      const fProgress = fDone ? 1 : Math.min(1, Math.max(0, safe(() => f.progress)))
+      const fBytes = done ? f.length : Math.max(0, safe(() => fileDownloaded(t, f)))
+      const fDone = done || !!f.done || fBytes >= f.length
+      const fProgress = fDone ? 1 : f.length ? fBytes / f.length : 0
       return {
         index: i,
         name: f.name,
         path: f.path,
         absPath: path.join(DOWNLOAD_DIR, f.path),
         length: f.length,
+        downloaded: fDone ? f.length : fBytes,
         progress: fProgress,
         done: fDone
       }
@@ -182,9 +250,10 @@ app.get('/api/torrents/:infoHash/files/:index', (req, res) => {
   if (!t) return res.status(404).json({ error: 'Not found' })
   const file = t.files[Number(req.params.index)]
   if (!file) return res.status(404).json({ error: 'File not found' })
-  const complete = t.done || file.done || safe(() => file.progress) >= 1
+  const bytes = safe(() => fileDownloaded(t, file))
+  const complete = t.done || file.done || bytes >= file.length
   if (!complete) {
-    const progress = Math.min(1, Math.max(0, safe(() => file.progress)))
+    const progress = file.length ? Math.min(1, Math.max(0, bytes / file.length)) : 0
     return res.status(409).json({ error: `File is ${(progress * 100).toFixed(1)}% complete — not downloadable yet` })
   }
   res.download(path.join(DOWNLOAD_DIR, file.path), file.name)

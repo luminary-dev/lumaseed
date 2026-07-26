@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Self-hosted torrent downloader with a browser UI — no speed caps, no size limits",
   "scripts": {
-    "start": "node server.js",
+    "start": "node start.js",
     "postinstall": "patch-package",
     "test": "node test/e2e.mjs"
   },
