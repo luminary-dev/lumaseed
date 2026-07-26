@@ -42,7 +42,10 @@ Then open **http://localhost:3456**.
 - Paste a **magnet link** and hit Add torrent, or
 - Drop a **.torrent file** onto the drop zone (or click it to browse).
 
-Files download to the downloads directory. Once a file hits 100% you can also click **Save** next to it in the UI to pull it through the browser (Range-supported, so 10GB+ files are fine).
+Files download to the downloads directory. Once a torrent completes you can pull it through the browser two ways:
+
+- **Download folder** — streams the whole torrent as a single `.zip` with its folder structure preserved. Written with no compression (media is already compressed, so this just wraps the bytes — it streams at disk speed) and ZIP64 so entries above 4 GB work.
+- **Save** next to an individual file, for one file at a time. Range-supported, so 10 GB+ files are fine.
 
 Pause / resume / remove per torrent. Removing asks whether to also delete the data from disk.
 

@@ -275,6 +275,44 @@ app.get('/api/torrents/:infoHash/files/:index', (req, res) => {
   res.download(path.join(DOWNLOAD_DIR, file.path), file.name)
 })
 
+// Download the whole torrent as one .zip, preserving its folder structure.
+// Browsers cannot download a directory, so this is the only way to get the
+// folder itself rather than its files one at a time.
+app.get('/api/torrents/:infoHash/zip', async (req, res) => {
+  const t = findTorrent(req.params.infoHash)
+  if (!t) return res.status(404).json({ error: 'Not found' })
+
+  const incomplete = t.files.filter((f) => !(t.done || f.done || safe(() => fileDownloaded(t, f)) >= f.length))
+  if (incomplete.length) {
+    return res.status(409).json({ error: `${incomplete.length} file(s) still downloading — zip is available once the torrent completes` })
+  }
+
+  const { ZipArchive } = await import('archiver')
+  // store: no compression. Media is already compressed, so deflating a 10GB
+  // file would burn CPU for nothing; this just streams bytes into a container.
+  // forceZip64 because the 4GB-per-entry classic ZIP limit is easily exceeded.
+  const archive = new ZipArchive({ store: true, forceZip64: true })
+
+  const zipName = `${(t.name || t.infoHash).replace(/[/\\?%*:|"<>]/g, '_')}.zip`
+  res.attachment(zipName)
+
+  archive.on('warning', (err) => console.error('[zip warning]', err.message))
+  archive.on('error', (err) => {
+    console.error('[zip error]', err.message)
+    res.destroy() // headers are already sent; cut the stream so the client sees a failure
+  })
+  // Stop archiving if the user cancels the browser download.
+  res.on('close', () => { if (!res.writableFinished) archive.abort() })
+
+  archive.pipe(res)
+  for (const f of t.files) {
+    // f.path is relative to DOWNLOAD_DIR and already includes the torrent
+    // folder, so the zip reproduces the same directory layout.
+    archive.file(path.join(DOWNLOAD_DIR, f.path), { name: f.path })
+  }
+  archive.finalize()
+})
+
 // Integrity check: re-read a sample of the pieces the bitfield claims are
 // verified and re-hash them, proving the reported progress is backed by real
 // bytes on disk. Kept in the product because a corrupt bitfield (see

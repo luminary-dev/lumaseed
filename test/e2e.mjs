@@ -223,6 +223,34 @@ for (const spec of FILES) {
   check(Number(res.headers.get('content-length')) === spec.size, `${spec.name}: content-length matches`)
 }
 
+console.log('\n-- folder download (.zip) --')
+{
+  const { execSync } = await import('node:child_process')
+  const zipPath = path.join(tmp, 'folder.zip')
+  const res = await fetch(`${BASE}/api/torrents/${t.infoHash}/zip`)
+  check(res.status === 200, 'zip endpoint returns 200', `got ${res.status}`)
+  const disp = res.headers.get('content-disposition') || ''
+  check(disp.includes('.zip'), 'sends a .zip attachment filename', disp)
+  fs.writeFileSync(zipPath, Buffer.from(await res.arrayBuffer()))
+
+  // Real unzip must accept it, and the folder structure must be preserved.
+  let listing = ''
+  let unzipOk = true
+  try { listing = execSync(`unzip -l ${JSON.stringify(zipPath)}`).toString() } catch { unzipOk = false }
+  check(unzipOk, 'archive is a valid zip (unzip -l succeeds)')
+  check(FILES.every((f) => listing.includes(`${path.basename(seedDir)}/${f.name}`)),
+    'zip preserves the torrent folder structure')
+
+  const outDir = path.join(tmp, 'unzipped')
+  execSync(`unzip -q -o ${JSON.stringify(zipPath)} -d ${JSON.stringify(outDir)}`)
+  const allMatch = FILES.every((f) => {
+    const p = path.join(outDir, path.basename(seedDir), f.name)
+    if (!fs.existsSync(p)) return false
+    return crypto.createHash('sha1').update(fs.readFileSync(p)).digest('hex') === srcHashes[f.name]
+  })
+  check(allMatch, 'every file extracted from the zip matches its source sha1')
+}
+
 console.log('\n-- pause / resume / remove --')
 {
   const p = await api(`/api/torrents/${t.infoHash}/pause`, { method: 'POST' })

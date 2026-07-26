@@ -289,6 +289,19 @@
   }
   .copy-btn:hover { color: var(--a-text); }
   .copy-btn.copied { color: var(--a-text); }
+  .btn-zip {
+    display: inline-flex; align-items: center; gap: .4rem;
+    background: var(--a-dim); color: var(--a-text);
+    border: 1px solid var(--a-border); border-radius: 100px;
+    padding: .3rem .8rem; margin-right: 4px;
+    font-size: .76rem; font-weight: 600; text-decoration: none;
+    white-space: nowrap;
+    transition: background .2s, color .2s, border-color .2s, transform .15s;
+  }
+  .btn-zip:hover { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  .btn-zip:active { transform: scale(.97); }
+  .btn-zip i { font-size: 14px; }
+
   .file-dl {
     flex-shrink: 0; align-self: center;
     display: inline-flex; align-items: center; gap: 5px;
@@ -575,6 +588,7 @@ function render(torrents) {
         ${name}
         ${chip(t)}
         <div class="t-actions">
+          ${t.done ? `<a class="btn-zip" href="/api/torrents/${t.infoHash}/zip" download><i class="ph ph-folder-simple-zip" aria-hidden="true"></i>Download folder</a>` : ''}
           ${t.done ? '' : t.paused
             ? `<button class="btn-icon" data-act="resume" data-hash="${t.infoHash}" aria-label="Resume" title="Resume"><i class="ph ph-play"></i></button>`
             : `<button class="btn-icon" data-act="pause" data-hash="${t.infoHash}" aria-label="Pause" title="Pause"><i class="ph ph-pause"></i></button>`}
