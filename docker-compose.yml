@@ -3,9 +3,23 @@ services:
     build: .
     container_name: torrentbox
     restart: unless-stopped
+
     ports:
-      - "3456:3456"          # web UI
+      - "3456:3456"          # web UI  -> http://localhost:3456
       - "42069:42069"        # incoming peers (TCP)
-      - "42069:42069/udp"    # incoming peers (uTP) + DHT
+      - "42069:42069/udp"    # DHT + UDP trackers
+
     volumes:
+      # Where your downloads land on the host. Change the left side to put
+      # them somewhere else, e.g. /mnt/storage/torrents:/downloads
       - ./downloads:/downloads
+
+    environment:
+      - PORT=3456
+      - TORRENT_PORT=42069
+      - DOWNLOAD_DIR=/downloads
+
+    # On Linux you can get slightly better peer connectivity by sharing the
+    # host's network instead of publishing ports. If you uncomment this,
+    # delete the whole "ports:" block above (the two are mutually exclusive).
+    # network_mode: host
