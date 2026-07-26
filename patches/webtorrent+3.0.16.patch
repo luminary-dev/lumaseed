@@ -1,0 +1,37 @@
+diff --git a/node_modules/webtorrent/lib/file.js b/node_modules/webtorrent/lib/file.js
+index 09c43b5..1da381a 100644
+--- a/node_modules/webtorrent/lib/file.js
++++ b/node_modules/webtorrent/lib/file.js
+@@ -48,8 +48,8 @@ export default class File extends EventEmitter {
+ 
+     const getPieceDownloaded = (pieceIndex) => {
+       const len = pieceIndex === pieces.length - 1 ? lastPieceLength : pieceLength
+-      if (bitfield.get(pieceIndex)) {
+-        // verified data
++      if (bitfield.get(pieceIndex) || !pieces[pieceIndex]) {
++        // verified data (verified pieces are set to null)
+         return len
+       } else {
+         // "in progress" data
+diff --git a/node_modules/webtorrent/lib/torrent.js b/node_modules/webtorrent/lib/torrent.js
+index 771a87f..c6b0f92 100644
+--- a/node_modules/webtorrent/lib/torrent.js
++++ b/node_modules/webtorrent/lib/torrent.js
+@@ -220,7 +220,7 @@ export default class Torrent extends EventEmitter {
+     if (!this.bitfield) return 0
+     let downloaded = 0
+     for (let index = 0, len = this.pieces.length; index < len; ++index) {
+-      if (this.bitfield.get(index)) { // verified data
++      if (this.bitfield.get(index) || !this.pieces[index]) { // verified data
+         downloaded += (index === len - 1) ? this.lastPieceLength : this.pieceLength
+       } else { // "in progress" data
+         const piece = this.pieces[index]
+@@ -1700,7 +1700,7 @@ export default class Torrent extends EventEmitter {
+       let ptr = 0
+ 
+       return index => {
+-        if (!tries || self.bitfield.get(index)) return true
++        if (!tries || self.bitfield.get(index) || !self.pieces[index]) return true
+ 
+         let missing = self.pieces[index].missing
+ 

@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TorrentBox</title>
+<link rel="stylesheet" href="/assets/geist/index.css">
+<link rel="stylesheet" href="/assets/geist-mono/index.css">
+<link rel="stylesheet" href="/assets/phosphor/regular/style.css">
+<style>
+  /*
+    Design system:
+    - Palette: zinc neutrals, one accent (muted sky), locked page-wide.
+      Green/amber appear only as functional status colors.
+    - Type: Geist (UI) + Geist Mono (numbers, hashes, stats).
+    - Radius scale: surfaces 12px, controls 8px, badges pill. No exceptions.
+    - Motion: functional only — progress width, hover/active feedback.
+  */
+  :root {
+    --bg: #09090b;
+    --surface: #111113;
+    --surface-2: #18181b;
+    --border: #27272a;
+    --border-soft: #1f1f23;
+    --text: #f4f4f5;
+    --text-2: #a1a1aa;
+    --text-3: #71717a;
+    --accent: #55b7e4;
+    --accent-text: #0a1218;
+    --ok: #34d399;
+    --warn: #d4a54c;
+    --danger: #e5645f;
+    --r-surface: 12px;
+    --r-control: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { color-scheme: dark; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Geist Variable', system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100dvh;
+    padding: 48px 20px 80px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: 'Geist Mono Variable', ui-monospace, 'SF Mono', monospace; }
+  .wrap { max-width: 780px; margin: 0 auto; }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 32px;
+    gap: 16px;
+  }
+  h1 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  h1 i { color: var(--accent); font-size: 18px; margin-right: 6px; vertical-align: -2px; }
+  #globalStats {
+    color: var(--text-3);
+    font-size: 12px;
+    text-align: right;
+  }
+
+  /* ---- add form ---- */
+  .add-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-surface);
+    padding: 20px;
+    margin-bottom: 28px;
+  }
+  .field-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-2);
+    margin-bottom: 8px;
+  }
+  .add-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+  input[type="text"] {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--r-control);
+    color: var(--text);
+    padding: 10px 12px;
+    font-size: 13.5px;
+    font-family: 'Geist Mono Variable', ui-monospace, monospace;
+    outline: none;
+    transition: border-color .15s;
+    min-width: 0;
+  }
+  input[type="text"]::placeholder { color: var(--text-3); }
+  input[type="text"]:focus-visible { border-color: var(--accent); }
+  button {
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 500;
+    border-radius: var(--r-control);
+    border: 1px solid transparent;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: background .15s, color .15s, border-color .15s, transform .1s;
+  }
+  button:active { transform: scale(0.98); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .btn-primary { background: var(--accent); color: var(--accent-text); }
+  .btn-primary:hover { background: #6fc3e9; }
+  .btn-icon {
+    background: transparent;
+    border-color: transparent;
+    color: var(--text-3);
+    padding: 6px 8px;
+    font-size: 15px;
+    line-height: 1;
+  }
+  .btn-icon:hover { color: var(--text); background: var(--surface-2); }
+  .btn-icon.danger:hover { color: var(--danger); }
+
+  .dropzone {
+    margin-top: 12px;
+    border: 1px dashed var(--border);
+    border-radius: var(--r-control);
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--text-3);
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color .15s, color .15s, background .15s;
+  }
+  .dropzone i { font-size: 16px; }
+  .dropzone:hover { color: var(--text-2); border-color: var(--text-3); }
+  .dropzone.drag { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent); }
+  .msg { margin-top: 10px; font-size: 13px; min-height: 20px; }
+  .msg.err { color: var(--danger); }
+  .msg.ok { color: var(--text-2); }
+
+  /* ---- torrent list ---- */
+  .list {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-surface);
+    overflow: hidden;
+  }
+  .row { padding: 16px 20px; }
+  .row + .row { border-top: 1px solid var(--border-soft); }
+  .row-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .t-name {
+    font-weight: 500;
+    font-size: 14px;
+    word-break: break-all;
+    flex: 1;
+    min-width: 0;
+  }
+  .t-name.pending { color: var(--text-3); font-weight: 400; }
+  .t-actions { display: flex; gap: 2px; flex-shrink: 0; }
+
+  .badge {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 9px;
+    border-radius: 999px;
+    letter-spacing: 0.01em;
+  }
+  .badge.dl { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  .badge.done { color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
+  .badge.stalled { color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .badge.paused { color: var(--text-3); background: var(--surface-2); }
+
+  .bar {
+    height: 3px;
+    background: var(--surface-2);
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 12px 0 10px;
+  }
+  .bar > div {
+    height: 100%;
+    background: var(--accent);
+    transition: width .6s ease;
+  }
+  .bar.done > div { background: var(--ok); }
+
+  .t-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    color: var(--text-3);
+    font-size: 12px;
+  }
+  .t-stats .em { color: var(--text-2); }
+
+  details { margin-top: 10px; }
+  summary {
+    color: var(--text-3);
+    font-size: 12.5px;
+    cursor: pointer;
+    user-select: none;
+    width: fit-content;
+  }
+  summary:hover { color: var(--text-2); }
+  .file-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    font-size: 13px;
+  }
+  .file-row + .file-row { border-top: 1px solid var(--border-soft); }
+  .file-row:first-of-type { margin-top: 6px; }
+  .file-name { flex: 1; min-width: 0; word-break: break-all; color: var(--text-2); }
+  .file-meta { flex-shrink: 0; color: var(--text-3); font-size: 12px; }
+  .file-dl {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 12.5px;
+    font-weight: 500;
+  }
+  .file-dl:hover { text-decoration: underline; }
+
+  /* ---- empty & loading states ---- */
+  .empty {
+    padding: 56px 20px;
+    text-align: center;
+  }
+  .empty i { font-size: 28px; color: var(--text-3); }
+  .empty p { margin-top: 12px; color: var(--text-2); font-weight: 500; }
+  .empty span { display: block; margin-top: 4px; color: var(--text-3); font-size: 13px; }
+
+  .skeleton { padding: 16px 20px; }
+  .skeleton + .skeleton { border-top: 1px solid var(--border-soft); }
+  .sk-line {
+    height: 12px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--surface-2) 25%, #202024 50%, var(--surface-2) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+  }
+  .sk-line.w60 { width: 60%; }
+  .sk-line.w35 { width: 35%; margin-top: 12px; }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+  @media (max-width: 560px) {
+    body { padding: 28px 12px 60px; }
+    header { flex-direction: column; gap: 4px; }
+    #globalStats { text-align: left; }
+    .row { padding: 14px 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><i class="ph ph-magnet-straight" aria-hidden="true"></i>TorrentBox</h1>
+    <div id="globalStats" class="mono" aria-live="polite"></div>
+  </header>
+
+  <section class="add-box" aria-label="Add a torrent">
+    <label class="field-label" for="magnetInput">Magnet link</label>
+    <div class="add-row">
+      <input type="text" id="magnetInput" placeholder="magnet:?xt=urn:btih:…" spellcheck="false" autocomplete="off">
+      <button class="btn-primary" id="addBtn">Add torrent</button>
+    </div>
+    <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Upload a .torrent file">
+      <i class="ph ph-upload-simple" aria-hidden="true"></i>
+      <span>Drop a .torrent file here, or click to browse</span>
+    </div>
+    <input type="file" id="fileInput" accept=".torrent" hidden>
+    <div class="msg" id="msg" role="status"></div>
+  </section>
+
+  <div class="list" id="list">
+    <div class="skeleton"><div class="sk-line w60"></div><div class="sk-line w35"></div></div>
+    <div class="skeleton"><div class="sk-line w60"></div><div class="sk-line w35"></div></div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id)
+let loaded = false
+
+function fmtBytes(n) {
+  if (!n) return '0 B'
+  const u = ['B', 'KB', 'MB', 'GB', 'TB']
+  const i = Math.min(Math.floor(Math.log2(n) / 10), u.length - 1)
+  return (n / 2 ** (10 * i)).toFixed(i ? 1 : 0) + ' ' + u[i]
+}
+function fmtEta(ms) {
+  if (!ms || !isFinite(ms) || ms <= 0) return '—'
+  const s = Math.round(ms / 1000)
+  if (s < 60) return s + 's'
+  if (s < 3600) return Math.floor(s / 60) + 'm ' + (s % 60) + 's'
+  if (s < 86400) return Math.floor(s / 3600) + 'h ' + Math.floor((s % 3600) / 60) + 'm'
+  return Math.floor(s / 86400) + 'd ' + Math.floor((s % 86400) / 3600) + 'h'
+}
+function esc(s) {
+  return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+}
+
+function showMsg(text, ok) {
+  const el = $('msg')
+  el.textContent = text
+  el.className = 'msg ' + (ok ? 'ok' : 'err')
+  if (text) setTimeout(() => { if (el.textContent === text) el.textContent = '' }, 6000)
+}
+
+async function api(url, opts) {
+  const res = await fetch(url, opts)
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || res.statusText)
+  return data
+}
+
+async function addMagnet() {
+  const magnet = $('magnetInput').value.trim()
+  if (!magnet) return
+  try {
+    await api('/api/torrents', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ magnet })
+    })
+    $('magnetInput').value = ''
+    showMsg('Torrent added. Connecting to peers…', true)
+    refresh()
+  } catch (e) { showMsg(e.message) }
+}
+
+async function addFile(file) {
+  if (!file) return
+  const form = new FormData()
+  form.append('torrent', file)
+  try {
+    await api('/api/torrents/file', { method: 'POST', body: form })
+    showMsg(`Added ${file.name}. Connecting to peers…`, true)
+    refresh()
+  } catch (e) { showMsg(e.message) }
+}
+
+async function action(hash, act) {
+  try {
+    if (act === 'remove') {
+      const del = confirm('Also delete the downloaded files from disk?\n\nOK deletes the files. Cancel keeps them.')
+      await api(`/api/torrents/${hash}?deleteFiles=${del}`, { method: 'DELETE' })
+    } else {
+      await api(`/api/torrents/${hash}/${act}`, { method: 'POST' })
+    }
+    refresh()
+  } catch (e) { showMsg(e.message) }
+}
+
+function badge(t) {
+  if (t.done) return '<span class="badge done">Complete</span>'
+  if (t.paused) return '<span class="badge paused">Paused</span>'
+  if (t.downloadSpeed > 1024) return '<span class="badge dl">Downloading</span>'
+  return '<span class="badge stalled">Searching for peers</span>'
+}
+
+function render(torrents) {
+  const list = $('list')
+  if (!torrents.length) {
+    list.innerHTML = `
+      <div class="empty">
+        <i class="ph ph-magnet-straight" aria-hidden="true"></i>
+        <p>No torrents yet</p>
+        <span>Paste a magnet link or drop a .torrent file above to start downloading.</span>
+      </div>`
+    return
+  }
+  const open = new Set([...list.querySelectorAll('details[open]')].map(d => d.dataset.hash))
+  list.innerHTML = torrents.map(t => {
+    const pct = (t.progress * 100).toFixed(1)
+    const name = t.name
+      ? `<div class="t-name">${esc(t.name)}</div>`
+      : `<div class="t-name pending mono">Fetching metadata · ${t.infoHash.slice(0, 12)}…</div>`
+    const files = t.files.map(f => `
+      <div class="file-row">
+        <span class="file-name">${esc(f.name)}</span>
+        <span class="file-meta mono">${fmtBytes(f.length)} · ${(f.progress * 100).toFixed(0)}%</span>
+        ${f.progress >= 1 ? `<a class="file-dl" href="/api/torrents/${t.infoHash}/files/${f.index}" download><i class="ph ph-download-simple" aria-hidden="true"></i>Save</a>` : ''}
+      </div>`).join('')
+    return `
+    <div class="row">
+      <div class="row-head">
+        ${name}
+        ${badge(t)}
+        <div class="t-actions">
+          ${t.done ? '' : t.paused
+            ? `<button class="btn-icon" onclick="action('${t.infoHash}','resume')" aria-label="Resume" title="Resume"><i class="ph ph-play"></i></button>`
+            : `<button class="btn-icon" onclick="action('${t.infoHash}','pause')" aria-label="Pause" title="Pause"><i class="ph ph-pause"></i></button>`}
+          <button class="btn-icon danger" onclick="action('${t.infoHash}','remove')" aria-label="Remove" title="Remove"><i class="ph ph-trash"></i></button>
+        </div>
+      </div>
+      <div class="bar ${t.done ? 'done' : ''}"><div style="width:${pct}%"></div></div>
+      <div class="t-stats mono">
+        <span class="em">${pct}%${t.length ? ' of ' + fmtBytes(t.length) : ''}</span>
+        <span>↓ ${fmtBytes(t.downloadSpeed)}/s</span>
+        <span>↑ ${fmtBytes(t.uploadSpeed)}/s</span>
+        <span>${t.numPeers} peer${t.numPeers === 1 ? '' : 's'}</span>
+        ${t.done ? '' : `<span>eta ${fmtEta(t.timeRemaining)}</span>`}
+      </div>
+      ${t.files.length ? `<details data-hash="${t.infoHash}" ${open.has(t.infoHash) ? 'open' : ''}>
+        <summary>${t.files.length} file${t.files.length > 1 ? 's' : ''}</summary>${files}
+      </details>` : ''}
+    </div>`
+  }).join('')
+}
+
+async function refresh() {
+  try {
+    const [torrents, status] = await Promise.all([api('/api/torrents'), api('/api/status')])
+    loaded = true
+    render(torrents)
+    $('globalStats').textContent =
+      `↓ ${fmtBytes(status.downloadSpeed)}/s · ↑ ${fmtBytes(status.uploadSpeed)}/s · ${status.downloadDir}`
+  } catch {
+    // Server restarting or unreachable — keep the last view and keep polling.
+  }
+}
+
+$('addBtn').onclick = addMagnet
+$('magnetInput').addEventListener('keydown', e => { if (e.key === 'Enter') addMagnet() })
+const dz = $('dropzone')
+dz.onclick = () => $('fileInput').click()
+dz.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('fileInput').click() } })
+$('fileInput').onchange = e => { addFile(e.target.files[0]); e.target.value = '' }
+;['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('drag') }))
+;['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('drag') }))
+dz.addEventListener('drop', e => addFile(e.dataTransfer.files[0]))
+
+refresh()
+setInterval(refresh, 1000)
+</script>
+</body>
+</html>

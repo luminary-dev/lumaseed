@@ -1,0 +1,11 @@
+services:
+  torrentbox:
+    build: .
+    container_name: torrentbox
+    restart: unless-stopped
+    ports:
+      - "3456:3456"          # web UI
+      - "42069:42069"        # incoming peers (TCP)
+      - "42069:42069/udp"    # incoming peers (uTP) + DHT
+    volumes:
+      - ./downloads:/downloads
