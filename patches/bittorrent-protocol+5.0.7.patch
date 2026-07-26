@@ -1,0 +1,28 @@
+diff --git a/node_modules/bittorrent-protocol/mse.js b/node_modules/bittorrent-protocol/mse.js
+index 53183c5..0089cb5 100644
+--- a/node_modules/bittorrent-protocol/mse.js
++++ b/node_modules/bittorrent-protocol/mse.js
+@@ -35,16 +35,21 @@ function createRC4Cipher (key) {
+     s[ii] = s[jj]
+     s[jj] = tmp
+   }
++  // Must NOT mutate `buf`. Callers pass live application buffers straight
++  // through — webtorrent hands its own piece bitfield to wire.bitfield() —
++  // and XOR-ing in place silently corrupts them. The native RC4 path
++  // (crypto.update) returns a fresh buffer, so match that contract.
+   return buf => {
++    const out = new Uint8Array(buf.length)
+     for (let i = 0; i < buf.length; i++) {
+       ii = (ii + 1) & 0xff
+       jj = (jj + s[ii]) & 0xff
+       const tmp = s[ii]
+       s[ii] = s[jj]
+       s[jj] = tmp
+-      buf[i] ^= s[(s[ii] + s[jj]) & 0xff]
++      out[i] = buf[i] ^ s[(s[ii] + s[jj]) & 0xff]
+     }
+-    return buf
++    return out
+   }
+ }
+ 

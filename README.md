@@ -52,7 +52,8 @@ The engine is configured for maximum throughput out of the box:
 
 - **No throttling anywhere** — download/upload limits are explicitly disabled.
 - **200 peer connections per torrent** (default is 55) and 10 parallel web-seed connections.
-- **TCP-first peer dialing** (patched) — stock webtorrent dials uTP first and burns ~40 seconds of timeouts per TCP-only peer before falling back; we dial TCP instantly and fall back to uTP instead, keeping uTP for the peers that need it.
+- **TCP-first peer dialing** (patched) — stock webtorrent dials uTP first and burns ~40 seconds of timeouts per TCP-only peer before falling back.
+- **uTP is deliberately off.** `utp-native` aborts the entire process from C++ (a `utp_close` assertion) on a malformed peer address, and a native abort cannot be caught from JS — fatal mid-download. TCP plus DHT and trackers reaches effectively the same swarm.
 - **DHT with 4× lookup concurrency**, PEX, local-network discovery, and 13 public trackers on every torrent.
 - **Automatic router port mapping** (UPnP + NAT-PMP) for the peer port, so inbound peers can reach you — being connectable is the single biggest real-world speed factor. If your router doesn't support either, forward TCP+UDP `42069` manually.
 - **32 disk I/O threads** (`UV_THREADPOOL_SIZE`) so hashing and writing 10GB+ files doesn't queue behind 4 default threads.
@@ -86,7 +87,12 @@ Runs an end-to-end suite that seeds a locally-generated 150MB torrent, downloads
 ## Implementation notes
 
 - Node + Express + [webtorrent](https://github.com/webtorrent/webtorrent) v3 (full TCP/UDP peer support, DHT, PEX — not the browser-only WebRTC variant).
-- `patches/webtorrent+3.0.16.patch` (applied automatically via `patch-package` on `npm install`) fixes null-piece races in webtorrent's piece selector and progress getters that crash or corrupt progress when resuming partial data, and switches outgoing peer dialing to TCP-first with uTP fallback (stock is uTP-first with a ~40s penalty per TCP-only peer).
+Patches (applied automatically by `patch-package` on `npm install`):
+
+- `patches/bittorrent-protocol+5.0.7.patch` — **the important one.** Its JS RC4 fallback (used on Node 17+ without `--openssl-legacy-provider`) XOR-ed its input buffer *in place*, and webtorrent hands it the client's live piece bitfield via `wire.bitfield()`. Since protocol encryption is on by default, every encrypted peer handshake scrambled the client's own bitfield into pseudorandom bits: progress climbed toward a phantom ~50%, and the download stalled because the client believed it already held those pieces. The cipher now returns a fresh buffer, matching Node's native RC4 behaviour.
+- `patches/webtorrent+3.0.16.patch` — sends a *copy* of the bitfield to the wire (defence in depth against the above), fixes null-piece crashes in the piece selector, request path, and progress getters, and dials peers TCP-first.
+
+`GET /api/verify/:infoHash` re-reads and re-hashes a sample of the pieces the bitfield claims are verified, so you can confirm reported progress is backed by real bytes.
 - UI: dependency-free vanilla HTML/CSS/JS in the Luminary design language (Outfit + JetBrains Mono, lime accent, light/dark themes) with self-hosted fonts and Phosphor icons — works fully offline. Stats (progress, ETA, speeds) are computed server-side from verified byte counts and clamped, never trusted from library getters.
 - **No authentication built in.** Fine on localhost or a LAN you trust; put a reverse proxy with auth in front before exposing it further.
 

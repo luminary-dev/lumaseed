@@ -185,6 +185,29 @@ if (t && t.done) {
   check(t.files.every((f) => f.absPath.startsWith(dlDir)), 'file absPaths point into download dir')
 }
 
+console.log('\n-- reported bytes vs real bytes on disk --')
+{
+  // Regression guard: a null-piece / bitfield disagreement once made the
+  // server report gigabytes that were never written. Compare the reported
+  // byte count against the blocks actually allocated on disk (files are
+  // sparse while downloading, so `du` is the ground truth, not `ls`).
+  const { execSync } = await import('node:child_process')
+  const realKB = Number(execSync(`du -sk ${JSON.stringify(dlDir)}`).toString().split(/\s+/)[0])
+  const realBytes = realKB * 1024
+  const reported = t.downloaded
+  // Allow 5% slack for filesystem block rounding and metadata overhead.
+  const ratio = reported / realBytes
+  check(ratio > 0.9 && ratio < 1.1,
+    'reported downloaded bytes match bytes actually on disk',
+    `reported ${(reported / 1e6).toFixed(1)}MB vs on-disk ${(realBytes / 1e6).toFixed(1)}MB`)
+}
+
+console.log('\n-- no swallowed internal errors --')
+{
+  const { body: status } = await api('/api/status')
+  check(status.errorCount === 0, 'server recorded no uncaught internal errors', status.lastError || '')
+}
+
 console.log('\n-- data integrity (all files, disk + HTTP) --')
 for (const spec of FILES) {
   const f = t.files.find((x) => x.name === spec.name)

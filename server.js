@@ -38,7 +38,11 @@ const client = new WebTorrent({
   maxWebConns: 10,           // parallel web-seed connections (default 4)
   downloadLimit: -1,         // explicitly unthrottled
   uploadLimit: -1,
-  utp: true,                 // uTP alongside TCP — reaches peers TCP can't
+  // uTP is OFF deliberately: utp-native aborts the whole process from C++
+  // (`utp_close` assertion) on a bad peer address, and a native abort is not
+  // catchable from JS — fatal mid-10GB-download. TCP + DHT + trackers reach
+  // effectively the same swarm. The Docker image has no utp-native either.
+  utp: false,
   dht: { concurrency: 64 },  // faster DHT lookups (default 16)
   natUpnp: 'permanent',      // auto port-map on the router (UPnP)
   natPmp: true,              // …and NAT-PMP — inbound peers = most speed
@@ -56,10 +60,17 @@ process.on('SIGINT', shutdown)
 process.on('SIGTERM', shutdown)
 client.on('error', (err) => console.error('[client]', err.message))
 
-// webtorrent has occasional internal races (e.g. piece-selection on resume).
-// A personal downloader should log and keep serving, not die mid-10GB-download.
-process.on('uncaughtException', (err) => console.error('[uncaught]', err.stack))
-process.on('unhandledRejection', (err) => console.error('[unhandled]', err))
+// Staying alive mid-10GB-download beats crashing, but a swallowed exception
+// once hid a piece-accounting bug for hours — so they are counted and
+// surfaced on /api/status rather than only written to the log.
+const errors = { count: 0, last: null }
+function noteError(kind, err) {
+  errors.count++
+  errors.last = `${kind}: ${err && err.message ? err.message : String(err)}`
+  console.error(`[${kind}]`, err && err.stack ? err.stack : err)
+}
+process.on('uncaughtException', (err) => noteError('uncaught', err))
+process.on('unhandledRejection', (err) => noteError('unhandled', err))
 
 const app = express()
 app.use(express.json())
@@ -88,14 +99,19 @@ function safe(fn, fallback = 0) {
 // getters. A 5MB file at 100% moves a 150MB torrent by ~3%, not by
 // "1 of 3 files".
 
-// Bytes of piece `i` that are actually on disk: the full piece when verified
-// (verified pieces are nulled in t.pieces), otherwise the received portion.
+// Bytes of piece `i` we actually hold.
+//
+// The BITFIELD is the single source of truth for "verified and written to
+// disk" — never the piece array. webtorrent nulls t.pieces[i] on verify, but
+// the two can transiently disagree (a null piece whose bitfield bit is not
+// set yet). Treating that state as a full piece is what silently inflated
+// progress by gigabytes over a long session, so it counts as zero.
 function pieceHave(t, i) {
-  const pieceLength = t.pieceLength
-  const pLen = i === t.pieces.length - 1 ? t.lastPieceLength : pieceLength
+  const pLen = i === t.pieces.length - 1 ? t.lastPieceLength : t.pieceLength
+  if (t.bitfield && t.bitfield.get(i)) return pLen   // verified, on disk
   const piece = t.pieces[i]
-  if ((t.bitfield && t.bitfield.get(i)) || !piece) return pLen
-  return Math.max(0, pLen - piece.missing)
+  if (!piece) return 0                               // not verified → nothing
+  return Math.max(0, pLen - piece.missing)           // partially received
 }
 
 // Total verified+received bytes for the whole torrent.
@@ -259,12 +275,47 @@ app.get('/api/torrents/:infoHash/files/:index', (req, res) => {
   res.download(path.join(DOWNLOAD_DIR, file.path), file.name)
 })
 
+// Integrity check: re-read a sample of the pieces the bitfield claims are
+// verified and re-hash them, proving the reported progress is backed by real
+// bytes on disk. Kept in the product because a corrupt bitfield (see
+// patches/bittorrent-protocol) is invisible from the normal stats alone.
+app.get('/api/verify/:infoHash', async (req, res) => {
+  const t = findTorrent(req.params.infoHash)
+  if (!t || !t.bitfield || !t.pieces.length) return res.status(404).json({ error: 'Not found' })
+
+  const verified = []
+  for (let i = 0; i < t.pieces.length; i++) if (t.bitfield.get(i)) verified.push(i)
+  const step = Math.max(1, Math.floor(verified.length / 25))
+  const sample = []
+  for (let k = 0; k < verified.length && sample.length < 25; k += step) sample.push(verified[k])
+
+  const { hash } = await import('uint8-util')
+  const results = await Promise.all(sample.map((i) => new Promise((resolve) => {
+    const opts = i === t.pieces.length - 1 ? { length: t.lastPieceLength } : {}
+    t.store.get(i, opts, async (err, buf) => {
+      if (err || !buf) return resolve('unreadable')
+      resolve((await hash(buf, 'hex')) === t._hashes[i] ? 'valid' : 'corrupt')
+    })
+  })))
+
+  const counts = results.reduce((a, r) => { a[r] = (a[r] || 0) + 1; return a }, {})
+  res.json({
+    piecesVerifiedByBitfield: verified.length,
+    totalPieces: t.pieces.length,
+    sampled: results.length,
+    ...counts,
+    healthy: (counts.valid || 0) === results.length
+  })
+})
+
 app.get('/api/status', (_req, res) => {
   res.json({
     downloadDir: DOWNLOAD_DIR,
     torrents: client.torrents.length,
     downloadSpeed: client.downloadSpeed,
-    uploadSpeed: client.uploadSpeed
+    uploadSpeed: client.uploadSpeed,
+    errorCount: errors.count,
+    lastError: errors.last
   })
 })
 

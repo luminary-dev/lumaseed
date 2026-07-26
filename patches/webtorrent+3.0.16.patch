@@ -1,31 +1,35 @@
 diff --git a/node_modules/webtorrent/lib/file.js b/node_modules/webtorrent/lib/file.js
-index 09c43b5..1da381a 100644
+index 09c43b5..a70a100 100644
 --- a/node_modules/webtorrent/lib/file.js
 +++ b/node_modules/webtorrent/lib/file.js
-@@ -48,8 +48,8 @@ export default class File extends EventEmitter {
- 
-     const getPieceDownloaded = (pieceIndex) => {
-       const len = pieceIndex === pieces.length - 1 ? lastPieceLength : pieceLength
--      if (bitfield.get(pieceIndex)) {
--        // verified data
-+      if (bitfield.get(pieceIndex) || !pieces[pieceIndex]) {
-+        // verified data (verified pieces are set to null)
+@@ -52,8 +52,9 @@ export default class File extends EventEmitter {
+         // verified data
          return len
        } else {
-         // "in progress" data
+-        // "in progress" data
+-        return len - pieces[pieceIndex].missing
++        // "in progress" data (null piece = not verified, contributes 0)
++        const piece = pieces[pieceIndex]
++        return piece ? len - piece.missing : 0
+       }
+     }
+ 
 diff --git a/node_modules/webtorrent/lib/torrent.js b/node_modules/webtorrent/lib/torrent.js
-index 771a87f..33fbefc 100644
+index 771a87f..4b82379 100644
 --- a/node_modules/webtorrent/lib/torrent.js
 +++ b/node_modules/webtorrent/lib/torrent.js
-@@ -220,7 +220,7 @@ export default class Torrent extends EventEmitter {
-     if (!this.bitfield) return 0
-     let downloaded = 0
+@@ -222,9 +222,9 @@ export default class Torrent extends EventEmitter {
      for (let index = 0, len = this.pieces.length; index < len; ++index) {
--      if (this.bitfield.get(index)) { // verified data
-+      if (this.bitfield.get(index) || !this.pieces[index]) { // verified data
+       if (this.bitfield.get(index)) { // verified data
          downloaded += (index === len - 1) ? this.lastPieceLength : this.pieceLength
-       } else { // "in progress" data
+-      } else { // "in progress" data
++      } else { // "in progress" data (null piece = not verified, contributes 0)
          const piece = this.pieces[index]
+-        downloaded += (piece.length - piece.missing)
++        if (piece) downloaded += (piece.length - piece.missing)
+       }
+     }
+     return downloaded
 @@ -1060,9 +1060,11 @@ export default class Torrent extends EventEmitter {
        return false
      }
@@ -40,7 +44,18 @@ index 771a87f..33fbefc 100644
      const wasAdded = !!this._addPeer(peer, type, source)
  
      if (wasAdded) {
-@@ -1700,7 +1702,7 @@ export default class Torrent extends EventEmitter {
+@@ -1491,7 +1493,9 @@ export default class Torrent extends EventEmitter {
+     // always send bitfield or equivalent fast extension message (required)
+     if (wire.hasFast && this._hasAllPieces()) wire.haveAll()
+     else if (wire.hasFast && this._hasNoPieces()) wire.haveNone()
+-    else wire.bitfield(this.bitfield)
++    // Send a COPY: the wire passes this buffer to the encryption layer, and
++    // an in-place stream cipher would otherwise scramble our own bitfield.
++    else wire.bitfield(new Uint8Array(this.bitfield.buffer))
+ 
+     // initialize interest in case bitfield message was already received before above handler was registered
+     this._updateWireInterest(wire)
+@@ -1700,7 +1704,7 @@ export default class Torrent extends EventEmitter {
        let ptr = 0
  
        return index => {
@@ -49,7 +64,18 @@ index 771a87f..33fbefc 100644
  
          let missing = self.pieces[index].missing
  
-@@ -2146,8 +2148,9 @@ export default class Torrent extends EventEmitter {
+@@ -1938,6 +1942,10 @@ export default class Torrent extends EventEmitter {
+     // var endGame = (wire.requests.length === 0 && self.store.numMissing < 30)
+ 
+     const piece = self.pieces[index]
++    // A piece can be null here while its bitfield bit is not yet set (the
++    // two briefly disagree around verification). Without this guard the
++    // reserve() below throws and kills the whole update tick.
++    if (!piece) return false
+     let reservation = isWebSeed ? piece.reserveRemaining() : piece.reserve()
+ 
+     if (reservation === -1 && hotswap && self._hotswap(wire, index)) {
+@@ -2146,8 +2154,9 @@ export default class Torrent extends EventEmitter {
        if (this.destroyed) return
  
        if (peer.retries >= RECONNECT_WAIT.length) {
@@ -61,7 +87,7 @@ index 771a87f..33fbefc 100644
            if (newPeer) newPeer.retries = 0
          } else {
            this._debug(
-@@ -2166,8 +2169,8 @@ export default class Torrent extends EventEmitter {
+@@ -2166,8 +2175,8 @@ export default class Torrent extends EventEmitter {
  
        const reconnectTimeout = setTimeout(() => {
          if (this.destroyed) return
