@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lumaseed Docs — install, use, and host it</title>
+<meta name="description" content="Everything Lumaseed does: install with Docker or Node, add magnet links and .torrent files, get your files back out, tune for speed, and host it safely on a server.">
+<link rel="canonical" href="https://lumaseed.luminary-dev.xyz/docs">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Lumaseed">
+<meta property="og:url" content="https://lumaseed.luminary-dev.xyz/docs">
+<meta property="og:title" content="Lumaseed Docs — install, use, and host it">
+<meta property="og:description" content="From one Docker command to running it on a server: the whole of Lumaseed in order.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Lumaseed Docs">
+<meta name="twitter:description" content="Install, use, tune and host Lumaseed.">
+<link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+<script>
+  (function () {
+    var t = localStorage.getItem('lumaseed-theme');
+    if (t !== 'light' && t !== 'dark') {
+      t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    document.documentElement.setAttribute('data-theme', t);
+  })();
+</script>
+<link rel="stylesheet" href="/assets/site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="hd">
+  <div class="container hd-inner">
+    <a class="hd-mark" href="https://luminary-dev.xyz" target="_blank" rel="noreferrer">Luminary<span>.</span></a>
+    <span class="hd-div" aria-hidden="true"></span>
+    <a class="hd-crumb mono" href="/">lumaseed</a>
+    <span class="hd-crumb-muted">/ docs</span>
+    <div class="hd-actions">
+      <button class="tt" id="tt" aria-label="Toggle light and dark theme">
+        <span class="tt-knob">
+          <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/></svg>
+          <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z"/></svg>
+        </span>
+      </button>
+      <a class="btn btn-primary" href="https://github.com/luminary-dev/lumaseed" target="_blank" rel="noreferrer">
+        GitHub
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M7 17L17 7M9 7h8v8"/></svg>
+      </a>
+    </div>
+  </div>
+</header>
+
+<section class="d-hero">
+  <div class="hero-glow" aria-hidden="true" style="opacity:.07"></div>
+  <div class="container" style="position:relative;z-index:1">
+    <span class="chip up">Docs · zero to downloading</span>
+    <h1 class="up">Everything Lumaseed does.</h1>
+    <p class="d-lede up">
+      Start with one command and finish with a torrent client running on your own server.
+      This page walks the whole thing in order — installing, adding torrents, getting your
+      files back out, tuning for speed, hosting it safely, and the handful of things that
+      catch people out.
+    </p>
+    <nav class="d-chips up" aria-label="Jump to section">
+      <a class="d-chip" href="#install"><strong>01</strong>Install</a>
+      <a class="d-chip" href="#use"><strong>02</strong>Adding torrents</a>
+      <a class="d-chip" href="#files"><strong>03</strong>Getting files out</a>
+      <a class="d-chip" href="#settings"><strong>04</strong>Settings</a>
+      <a class="d-chip" href="#speed"><strong>05</strong>Speed</a>
+      <a class="d-chip" href="#hosting"><strong>06</strong>Hosting</a>
+      <a class="d-chip" href="#api"><strong>07</strong>API</a>
+      <a class="d-chip" href="#gotchas"><strong>08</strong>Gotchas</a>
+    </nav>
+  </div>
+</section>
+
+<div class="container d-body">
+  <aside class="d-aside">
+    <div class="d-aside-label">on this page</div>
+    <nav class="toc" aria-label="Table of contents">
+      <a href="#install">Install</a>
+      <a href="#use">Adding torrents</a>
+      <a href="#files">Getting files out</a>
+      <a href="#settings">Settings</a>
+      <a href="#speed">Speed</a>
+      <a href="#hosting">Hosting</a>
+      <a href="#api">API</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+    <a class="btn btn-primary" href="https://github.com/luminary-dev/lumaseed" target="_blank" rel="noreferrer">Get the code</a>
+  </aside>
+
+  <main id="main">
+
+    <!-- 01 -->
+    <section id="install" class="d-section">
+      <span class="d-eyebrow">01 · install</span>
+      <h2>One command, then open a browser.</h2>
+      <p>
+        You need a machine that can stay switched on while things download — a laptop, a home
+        server, a Raspberry Pi, or a rented VPS — and <a href="https://docs.docker.com/get-started/get-docker/" target="_blank" rel="noreferrer">Docker</a>.
+        That is the only dependency.
+      </p>
+      <div class="code">
+        <pre id="c-install"><span class="cmt"># grab the code and start it</span>
+git clone https://github.com/luminary-dev/lumaseed.git
+<span class="kw">cd</span> lumaseed
+docker compose up -d</pre>
+        <button class="copy" data-copy-target="c-install" aria-label="Copy" title="Copy">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>
+        </button>
+      </div>
+      <p>
+        The first run takes a minute or two while it builds. Then open
+        <code class="inline">http://localhost:3456</code>. Downloads land in a
+        <code class="inline">downloads</code> folder next to the project files.
+      </p>
+
+      <h3>Stopping it and checking on it</h3>
+      <div class="code">
+        <pre id="c-ops">docker compose down          <span class="cmt"># stop</span>
+docker compose logs -f       <span class="cmt"># watch what it's doing</span>
+docker compose ps            <span class="cmt"># is it running?</span></pre>
+        <button class="copy" data-copy-target="c-ops" aria-label="Copy" title="Copy">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>
+        </button>
+      </div>
+
+      <h3>Without Docker</h3>
+      <p>If you would rather run it directly and you have Node.js 20 or newer:</p>
+      <div class="code">
+        <pre id="c-node">npm install
+npm start</pre>
+        <button class="copy" data-copy-target="c-node" aria-label="Copy" title="Copy">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- 02 -->
+    <section id="use" class="d-section">
+      <span class="d-eyebrow">02 · adding torrents</span>
+      <h2>Paste a link, or drop a file.</h2>
+      <p>
+        There are two ways to start a download, and both work the moment the page loads:
+      </p>
+      <ul>
+        <li><strong>Magnet link</strong> — paste it into the box and press Add (or hit Enter).</li>
+        <li><strong>.torrent file</strong> — drag it onto the drop zone, or click to browse.</li>
+      </ul>
+      <p>
+        While a torrent runs you get a progress bar, download and upload speed, the number of
+        peers you are connected to, and an estimated time remaining. Every torrent can be
+        paused, resumed, or removed. Removing asks whether to delete the downloaded data too,
+        so you can drop a torrent from the list and keep the files.
+      </p>
+      <div class="note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 16v-5M12 8h.01"/></svg>
+        <p>Adding the same torrent twice is refused rather than duplicated — if it is already in the list, Lumaseed tells you instead of starting a second copy.</p>
+      </div>
+    </section>
+
+    <!-- 03 -->
+    <section id="files" class="d-section">
+      <span class="d-eyebrow">03 · getting files out</span>
+      <h2>Three ways to reach what you downloaded.</h2>
+      <p>
+        Because Lumaseed runs on your own machine, the files are already on that disk when the
+        torrent completes. How you get to them depends on where you are sitting.
+      </p>
+
+      <h3>Open the folder directly</h3>
+      <p>
+        The fastest option when you are at the same computer. Every file in the interface shows
+        its full path with a copy button next to it — click the path to select it, or the button
+        to copy it.
+      </p>
+
+      <h3>Download the whole folder</h3>
+      <p>
+        Browsers cannot download a directory, so <strong>Download folder</strong> packages the
+        entire torrent — folder structure intact — into a single <code class="inline">.zip</code>
+        and streams it to you. It is built without compression, because video and audio are
+        already compressed and squeezing them again wastes time for no gain, so it moves about as
+        fast as your network allows. Files larger than 4&nbsp;GB are handled with ZIP64.
+      </p>
+
+      <h3>Save one file</h3>
+      <p>
+        Each completed file has its own <strong>Save</strong> link. These support range requests,
+        so pausing and resuming a 10&nbsp;GB browser download works normally.
+      </p>
+    </section>
+
+    <!-- 04 -->
+    <section id="settings" class="d-section">
+      <span class="d-eyebrow">04 · settings</span>
+      <h2>Three environment variables, and where files land.</h2>
+      <p>Set these in the <code class="inline">environment:</code> block of <code class="inline">docker-compose.yml</code>:</p>
+      <table class="d-table">
+        <thead><tr><th>Variable</th><th>Default</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td>PORT</td><td>3456</td><td>Port the web interface is served on</td></tr>
+          <tr><td>TORRENT_PORT</td><td>42069</td><td>Port other peers connect to you on (TCP and UDP)</td></tr>
+          <tr><td>DOWNLOAD_DIR</td><td>/downloads</td><td>Where files are saved inside the container</td></tr>
+        </tbody>
+      </table>
+      <p>
+        To save downloads somewhere else — an external drive, a NAS mount — change the left-hand
+        side of the volume line. The right-hand side stays as it is:
+      </p>
+      <div class="code">
+        <pre id="c-vol"><span class="kw">volumes:</span>
+  - <span class="str">/mnt/storage/torrents</span>:/downloads</pre>
+        <button class="copy" data-copy-target="c-vol" aria-label="Copy" title="Copy">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- 05 -->
+    <section id="speed" class="d-section">
+      <span class="d-eyebrow">05 · speed</span>
+      <h2>What actually makes a torrent fast.</h2>
+      <p>
+        Lumaseed ships tuned for throughput — nothing is throttled, it opens far more peer
+        connections than a default client, keeps thirteen public trackers plus DHT and PEX
+        active, and gives disk I/O its own widened thread pool. Three things outside the
+        software then decide your actual speed.
+      </p>
+
+      <h3>How many people are sharing it</h3>
+      <p>
+        By far the biggest factor, and nothing can change it. A popular torrent with hundreds of
+        seeders will saturate your connection. A rare one with two seeders will crawl in any
+        client. The swarm's combined upload capacity is a hard ceiling.
+      </p>
+
+      <h3>Whether peers can reach you</h3>
+      <p>
+        Torrents are much faster when other people can connect <em>to</em> you, not only when you
+        reach out to them. Lumaseed tries to arrange this automatically on home routers using
+        UPnP and NAT-PMP. If your router has those disabled, forward port
+        <code class="inline">42069</code> — both TCP and UDP — to the machine running Lumaseed.
+        On a rented server, open that port in the provider's firewall instead.
+      </p>
+
+      <h3>Your own connection</h3>
+      <p>
+        A wired connection beats Wi-Fi. Some VPNs deliberately slow file sharing down, so if
+        speeds are poor, try without one — and if you keep the VPN, you need a provider that
+        offers port forwarding or you will be outbound-only.
+      </p>
+    </section>
+
+    <!-- 06 -->
+    <section id="hosting" class="d-section">
+      <span class="d-eyebrow">06 · hosting</span>
+      <h2>Running it on a server, safely.</h2>
+
+      <div class="note warn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+        <p><strong>There is no login screen.</strong> Anyone who can reach the address can add torrents and download your files. That is fine on your own machine at <code class="inline">localhost</code>, but do not put it directly on the public internet.</p>
+      </div>
+
+      <p>
+        The simplest safe way to use it from your phone or laptop is a private network such as
+        <a href="https://tailscale.com" target="_blank" rel="noreferrer">Tailscale</a> — install it
+        on the server and on your devices, and they can reach each other without exposing
+        anything publicly. If you genuinely need it public, put Caddy, nginx or Cloudflare Access
+        in front with HTTPS and a password.
+      </p>
+
+      <h3>It cannot run on serverless platforms</h3>
+      <p>
+        Vercel, Netlify and AWS Lambda will not work, no matter what you add. A torrent client
+        has to hold network connections open for hours and write large files to a real disk;
+        those platforms run short-lived functions with temporary storage. You need an actual
+        always-on machine.
+      </p>
+
+      <h3>Check your provider's rules</h3>
+      <p>
+        Many hosts prohibit file sharing in their terms of service and will suspend a server that
+        receives a copyright complaint. Providers that advertise seedbox hosting expect this
+        traffic; most general-purpose clouds do not.
+      </p>
+
+      <h3>Watch the bandwidth billing</h3>
+      <p>
+        A torrent client keeps uploading after your download finishes, so you can easily use more
+        data than you downloaded. Pick an unmetered plan where you can.
+      </p>
+    </section>
+
+    <!-- 07 -->
+    <section id="api" class="d-section">
+      <span class="d-eyebrow">07 · api</span>
+      <h2>The HTTP endpoints, if you want to script it.</h2>
+      <p>The interface is built entirely on these, so anything the page can do, a script can do.</p>
+      <table class="d-table">
+        <thead><tr><th>Endpoint</th><th>Does</th></tr></thead>
+        <tbody>
+          <tr><td>GET /api/torrents</td><td>List every torrent with progress, speeds, peers and files</td></tr>
+          <tr><td>POST /api/torrents</td><td>Add a magnet link — JSON body <code class="inline">{"magnet":"…"}</code></td></tr>
+          <tr><td>POST /api/torrents/file</td><td>Add a .torrent upload (multipart field <code class="inline">torrent</code>)</td></tr>
+          <tr><td>POST /api/torrents/:hash/pause</td><td>Pause a torrent</td></tr>
+          <tr><td>POST /api/torrents/:hash/resume</td><td>Resume a torrent</td></tr>
+          <tr><td>DELETE /api/torrents/:hash</td><td>Remove it — add <code class="inline">?deleteFiles=true</code> to delete data too</td></tr>
+          <tr><td>GET /api/torrents/:hash/zip</td><td>Stream the whole torrent folder as a zip</td></tr>
+          <tr><td>GET /api/torrents/:hash/files/:i</td><td>Download one completed file</td></tr>
+          <tr><td>GET /api/verify/:hash</td><td>Re-hash a sample of pieces and report whether they are genuinely on disk</td></tr>
+          <tr><td>GET /api/status</td><td>Global speeds, download directory and internal error count</td></tr>
+        </tbody>
+      </table>
+      <div class="code">
+        <pre id="c-api"><span class="cmt"># add a torrent from the command line</span>
+curl -X POST http://localhost:3456/api/torrents \
+  -H <span class="str">'Content-Type: application/json'</span> \
+  -d <span class="str">'{"magnet":"magnet:?xt=urn:btih:..."}'</span></pre>
+        <button class="copy" data-copy-target="c-api" aria-label="Copy" title="Copy">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- 08 -->
+    <section id="gotchas" class="d-section">
+      <span class="d-eyebrow">08 · gotchas</span>
+      <h2>Four things that catch people out.</h2>
+
+      <h3>A dead torrent cannot be downloaded by anything</h3>
+      <p>
+        If a torrent sits on "Searching for peers" forever, nobody online has the file any more.
+        No client can fix that, because the data is not on the network. Lumaseed keeps looking
+        for as long as it runs, so leaving it overnight is worth a try — but after a few days
+        with zero peers, the torrent is genuinely gone.
+      </p>
+
+      <h3>Torrents are not remembered across restarts</h3>
+      <p>
+        If the container restarts, your downloaded files are safe on disk, but the list of active
+        torrents is cleared and you will need to re-add the magnet links. Re-adding verifies the
+        existing data first, so a completed torrent jumps straight back to 100% instead of
+        downloading again.
+      </p>
+
+      <h3>The zip is only offered once everything is complete</h3>
+      <p>
+        Partial files would produce a broken archive, so the folder download returns an error
+        until every file in the torrent has finished. Individual completed files can still be
+        saved one at a time before then.
+      </p>
+
+      <h3>Completed downloads are correct by design</h3>
+      <p>
+        Every piece is cryptographically verified before it is written, so a finished torrent is
+        intact. If you want to confirm independently, call
+        <code class="inline">/api/verify/:hash</code> — it re-reads and re-hashes a sample of the
+        data and reports <code class="inline">"healthy": true</code>.
+      </p>
+
+      <div class="note" style="margin-top:2rem">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 16v-5M12 8h.01"/></svg>
+        <p>Only download content you have the legal right to. You are responsible for what you do with this software.</p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  <div class="container">
+    <div class="ft-links">
+      <a href="/">Home</a>
+      <a href="https://github.com/luminary-dev/lumaseed" target="_blank" rel="noreferrer">GitHub</a>
+      <a href="https://luminary-dev.xyz" target="_blank" rel="noreferrer">Luminary</a>
+      <a href="https://lumagram.luminary-dev.xyz" target="_blank" rel="noreferrer">Lumagram</a>
+    </div>
+    <p>A product of <a href="https://luminary-dev.xyz" target="_blank" rel="noreferrer">Luminary</a> · MIT licensed</p>
+  </div>
+</footer>
+
+<script src="/assets/site.js"></script>
+</body>
+</html>

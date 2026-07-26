@@ -1,7 +1,7 @@
 services:
-  torrentbox:
+  lumaseed:
     build: .
-    container_name: torrentbox
+    container_name: lumaseed
     restart: unless-stopped
 
     ports:

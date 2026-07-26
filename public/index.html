@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>torrentbox</title>
+<title>lumaseed</title>
 <script>
   // Set theme before first paint — same pattern as the Luminary landing page.
   (function () {
-    var t = localStorage.getItem('torrentbox-theme')
+    var t = localStorage.getItem('lumaseed-theme')
     if (t !== 'light' && t !== 'dark') {
       t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
     }
@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="/assets/phosphor/regular/style.css">
 <style>
   /* ============================================================
-     torrentbox — Luminary design language
+     lumaseed — Luminary design language
      Tokens ported from luminary-landing-page/app/globals.css:
      lime accent, light/dark via [data-theme], Outfit + JetBrains
      Mono, pill controls, chip badges, soft card surfaces.
@@ -373,7 +373,7 @@
 <body>
 <div class="wrap">
   <header>
-    <div class="logo">torrentbox<span class="dot">.</span></div>
+    <div class="logo">lumaseed<span class="dot">.</span></div>
     <div class="head-right">
       <div id="globalStats" class="mono" aria-live="polite"></div>
       <button class="theme-toggle" id="themeToggle" aria-label="Toggle light and dark theme">
@@ -445,7 +445,7 @@ function esc(s) {
 $('themeToggle').onclick = () => {
   const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
   document.documentElement.setAttribute('data-theme', cur)
-  localStorage.setItem('torrentbox-theme', cur)
+  localStorage.setItem('lumaseed-theme', cur)
 }
 
 /* ---------- api ---------- */

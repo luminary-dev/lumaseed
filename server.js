@@ -358,7 +358,7 @@ app.get('/api/status', (_req, res) => {
 })
 
 const httpServer = app.listen(PORT, () => {
-  console.log(`TorrentBox running at http://localhost:${PORT}`)
+  console.log(`Lumaseed running at http://localhost:${PORT}`)
   console.log(`Saving downloads to ${DOWNLOAD_DIR}`)
 })
 // Failing to bind the port is fatal — never survive as a zombie process.

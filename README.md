@@ -1,4 +1,6 @@
-# TorrentBox
+# Lumaseed
+
+> Self-hosted torrent downloader with a browser UI. A product of [Luminary](https://luminary-dev.xyz).
 
 A torrent downloader you run yourself and use from your web browser.
 
@@ -66,7 +68,7 @@ Same address: http://localhost:3456
 **When it's finished**, you have three ways to get your files:
 
 1. **Open the folder directly.** The files are already on the machine, in the `downloads` folder. The interface shows the full path of every file and has a copy button next to it. This is the fastest option when you're sitting at the same computer.
-2. **Download folder** packages the entire torrent — folder structure and all — into a single `.zip` and sends it to your browser. Use this when you're accessing TorrentBox from a different device, like a laptop or phone.
+2. **Download folder** packages the entire torrent — folder structure and all — into a single `.zip` and sends it to your browser. Use this when you're accessing Lumaseed from a different device, like a laptop or phone.
 3. **Save** next to an individual file downloads just that one file.
 
 The zip is built without compression, because video and audio files are already compressed and squeezing them again would waste time for no benefit. It streams straight from disk, so even very large torrents download about as fast as your network allows.
@@ -77,7 +79,7 @@ There's a light/dark theme toggle in the top-right corner.
 
 ## Important: there is no password
 
-TorrentBox has **no login screen**. Anyone who can reach the address can add torrents and download your files.
+Lumaseed has **no login screen**. Anyone who can reach the address can add torrents and download your files.
 
 That's perfectly fine when you're running it on your own computer and only opening it at `localhost`. But **do not put it directly on the public internet.** If you want to use it from outside your home, the safest and simplest approach is a private network like [Tailscale](https://tailscale.com) — install it on the server and on your phone or laptop, and they can talk to each other privately without exposing anything to the world.
 
@@ -87,17 +89,17 @@ If you really do need it publicly reachable, put something in front of it that r
 
 ## Getting the best speed
 
-TorrentBox is already tuned for maximum throughput — nothing is throttled, and it uses far more peer connections than a default client. In practice, three things determine how fast a torrent goes:
+Lumaseed is already tuned for maximum throughput — nothing is throttled, and it uses far more peer connections than a default client. In practice, three things determine how fast a torrent goes:
 
 **How many people are sharing it.** This is by far the biggest factor and it's outside anyone's control. A popular torrent with hundreds of seeders will saturate your connection. A rare one with two seeders will crawl no matter what software you use.
 
-**Whether other people can connect to you.** Torrents are much faster when peers can reach you directly, not just when you reach out to them. TorrentBox tries to configure this automatically on home routers using UPnP. If your router has UPnP disabled, you can do it manually by forwarding port **42069** (both TCP and UDP) to the machine running TorrentBox. On a rented server, open that port in the provider's firewall instead.
+**Whether other people can connect to you.** Torrents are much faster when peers can reach you directly, not just when you reach out to them. Lumaseed tries to configure this automatically on home routers using UPnP. If your router has UPnP disabled, you can do it manually by forwarding port **42069** (both TCP and UDP) to the machine running Lumaseed. On a rented server, open that port in the provider's firewall instead.
 
 **Your own connection.** A wired ethernet cable beats Wi-Fi. Some VPNs deliberately slow down file sharing, so if speeds are poor, try without it.
 
 ### If a torrent won't download at all
 
-If it sits on "Searching for peers" forever, the torrent is probably **dead** — meaning nobody online has the file any more. When that happens, no program can download it, because the data simply isn't out there. TorrentBox keeps looking in the background for as long as it's running, so if someone does come online with the file, it will start automatically. Leaving it running overnight is worth a try; if nothing happens after a few days, the torrent is gone.
+If it sits on "Searching for peers" forever, the torrent is probably **dead** — meaning nobody online has the file any more. When that happens, no program can download it, because the data simply isn't out there. Lumaseed keeps looking in the background for as long as it's running, so if someone does come online with the file, it will start automatically. Leaving it running overnight is worth a try; if nothing happens after a few days, the torrent is gone.
 
 ---
 
@@ -166,3 +168,7 @@ Only download content you have the legal right to. You are responsible for what 
 ## License
 
 MIT
+
+---
+
+**Website:** [lumaseed.luminary-dev.xyz](https://lumaseed.luminary-dev.xyz) · **Docs:** [/docs](https://lumaseed.luminary-dev.xyz/docs)
