@@ -73,6 +73,22 @@
     });
   });
 
+  /* ---- cover header: float on the dark hero, theme up past it ----
+     The hero is a dark stage in both themes, so a themed header bar sitting on
+     top of it reads as a bug in light mode. The header stays transparent with
+     light text while it is over the hero, then adopts the page colours once the
+     hero has scrolled by. */
+  var coverHeader = document.querySelector('body.cover .hd');
+  var heroEl = document.querySelector('.hero');
+  if (coverHeader && heroEl) {
+    var syncHeader = function () {
+      coverHeader.classList.toggle('scrolled', window.scrollY > heroEl.offsetHeight - 60);
+    };
+    syncHeader();
+    window.addEventListener('scroll', syncHeader, { passive: true });
+    window.addEventListener('resize', syncHeader);
+  }
+
   /* ---- hero: lazy-load the Hyperspeed WebGL backdrop ----
      The CSS gradient underneath is the real background; this fades in over it
      once the page is idle. Skipped entirely for reduced-motion users, on tiny

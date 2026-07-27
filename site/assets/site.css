@@ -108,6 +108,40 @@ a:focus-visible,button:focus-visible {
   transition:background .28s,border-color .28s;
 }
 .hd-inner { display:flex;height:60px;align-items:center;gap:14px }
+
+/* Cover page only: the hero is a dark stage in both themes, so a light header
+   bar sitting on top of it reads as a bug. The header floats transparently on
+   the stage instead, and only adopts the page theme once you scroll past the
+   hero (same device as nav.scrolled on luminary-dev.xyz). The docs page keeps
+   the normal themed header, since its hero follows the page theme. */
+body.cover .hd {
+  position:fixed;left:0;right:0;
+  background:transparent;border-bottom-color:transparent;
+  backdrop-filter:none;-webkit-backdrop-filter:none;
+  color:#f4f4f5;
+}
+body.cover .hd .hd-crumb-muted { color:#a1a1aa }
+body.cover .hd .hd-div { background:rgba(255,255,255,.18) }
+body.cover .hd .tt {
+  background:rgba(255,255,255,.07);
+  border-color:rgba(255,255,255,.16);
+  box-shadow:none;
+}
+body.cover .hd.scrolled {
+  background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  border-bottom-color:var(--border);
+  color:var(--text);
+}
+body.cover .hd.scrolled .hd-crumb-muted { color:var(--muted) }
+body.cover .hd.scrolled .hd-div { background:var(--border) }
+body.cover .hd.scrolled .tt {
+  background:var(--off);border-color:var(--border);
+  box-shadow:inset 2px 2px 5px rgba(0,0,0,.12),inset -2px -2px 5px rgba(255,255,255,.6);
+}
+[data-theme="dark"] body.cover .hd.scrolled .tt {
+  box-shadow:inset 2px 2px 6px rgba(0,0,0,.55),inset -2px -2px 6px rgba(255,255,255,.04);
+}
 .hd-mark { font-size:17px;font-weight:800;letter-spacing:-.04em }
 .hd-mark span { color:var(--accent);transition:color .28s }
 .hd-div { width:1px;height:15px;background:var(--border);flex-shrink:0 }
@@ -175,8 +209,12 @@ a:focus-visible,button:focus-visible {
    the page theme. This is the one intentional theme break on the page. */
 .hero {
   position:relative;overflow:hidden;
-  border-bottom:1px solid var(--border);
-  padding:7.5rem 0 6.5rem;
+  /* No hairline here: the dark-stage-to-page colour change IS the divider, and
+     a border using the hero's own (white-ish) token would be invisible in
+     light mode anyway. */
+  border-bottom:none;
+  /* Top padding clears the fixed 60px header, which floats on the stage. */
+  padding:calc(7.5rem + 60px) 0 6.5rem;
   background:#05050a;
   --text:#f4f4f5;
   --muted:#a1a1aa;
@@ -306,7 +344,7 @@ footer a:hover { text-decoration:underline }
   .grid3 { grid-template-columns:1fr }
   .grid2 { grid-template-columns:1fr }
   .container { padding:0 20px }
-  .hero { padding:4.5rem 0 4rem }
+  .hero { padding:calc(4.5rem + 60px) 0 4rem }
   section.band { padding:4rem 0 }
   .hd-crumb-muted { display:none }
 }
