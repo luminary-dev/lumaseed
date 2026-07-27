@@ -73,6 +73,61 @@
     });
   });
 
+  /* ---- hero: lazy-load the Hyperspeed WebGL backdrop ----
+     The CSS gradient underneath is the real background; this fades in over it
+     once the page is idle. Skipped entirely for reduced-motion users, on tiny
+     screens (cost outweighs the payoff), and wherever WebGL is unavailable —
+     in every one of those cases the gradient simply stays. */
+  var fx = document.getElementById('hero-fx');
+  if (fx) {
+    var skip =
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+      window.matchMedia('(max-width: 700px)').matches ||
+      !(function () {
+        try {
+          var c = document.createElement('canvas');
+          return !!(window.WebGLRenderingContext &&
+            (c.getContext('webgl2') || c.getContext('webgl')));
+        } catch (e) { return false; }
+      })();
+
+    if (!skip) {
+      var start = function () {
+        import('/assets/hyperspeed.min.js').then(function (mod) {
+          mod.initHyperspeed(fx, {
+            distortion: 'turbulentDistortion',
+            fov: 90,
+            fovSpeedUp: 150,
+            speedUp: 2,
+            carLightsFade: 0.4,
+            totalSideLightSticks: 20,
+            lightPairsPerRoadWay: 40,
+            colors: {
+              // Brand palette: lime accent for our lane, cool slate oncoming.
+              roadColor: 0x05050a,
+              islandColor: 0x07070d,
+              background: 0x05050a,
+              shoulderLines: 0x1c1c22,
+              brokenLines: 0x26262e,
+              leftCars: [0xa3e635, 0x84cc16, 0x65a30d],
+              rightCars: [0x3f3f46, 0x52525b, 0x27272a],
+              sticks: 0xa3e635
+            }
+          });
+          fx.classList.add('ready');
+        }).catch(function () {
+          /* bundle blocked or failed — the gradient is already correct */
+        });
+      };
+      // Wait for first paint to finish before pulling ~700KB of WebGL.
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(start, { timeout: 2500 });
+      } else {
+        window.addEventListener('load', function () { setTimeout(start, 400); });
+      }
+    }
+  }
+
   /* ---- docs: highlight the section currently in view ---- */
   var tocLinks = document.querySelectorAll('.toc a');
   if (tocLinks.length && 'IntersectionObserver' in window) {

@@ -55,7 +55,12 @@
 
   <!-- ---------------------------------------------------------- hero -->
   <section class="hero">
+    <!-- Hyperspeed WebGL backdrop. The gradient + glow below paint instantly and
+         stay as the fallback; the canvas fades in over them once the effect
+         bundle has lazy-loaded (and never on prefers-reduced-motion). -->
+    <div class="hero-fx" id="hero-fx" aria-hidden="true"></div>
     <div class="hero-glow" aria-hidden="true"></div>
+    <div class="hero-scrim" aria-hidden="true"></div>
     <div class="container hero-inner">
       <span class="chip up">Open source · self-hosted</span>
       <h1 class="hero-h1 up">Your torrents. Your machine. <em>Full speed.</em></h1>
