@@ -432,11 +432,15 @@ export function initHyperspeed(container, effectOptions = {}) {
 
       initPasses() {
         this.renderPass = new RenderPass(this.scene, this.camera);
+        // Bloom is additive, so on a light background the stock settings blow
+        // everything out to white. Exposed as options so the light theme can
+        // raise the threshold and damp the intensity.
         this.bloomPass = new EffectPass(
           this.camera,
           new BloomEffect({
-            luminanceThreshold: 0.2,
-            luminanceSmoothing: 0,
+            luminanceThreshold: this.options.bloomThreshold ?? 0.2,
+            luminanceSmoothing: this.options.bloomSmoothing ?? 0,
+            intensity: this.options.bloomIntensity ?? 1,
             resolutionScale: 1
           })
         );

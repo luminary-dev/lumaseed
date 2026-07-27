@@ -109,38 +109,18 @@ a:focus-visible,button:focus-visible {
 }
 .hd-inner { display:flex;height:60px;align-items:center;gap:14px }
 
-/* Cover page only: the hero is a dark stage in both themes, so a light header
-   bar sitting on top of it reads as a bug. The header floats transparently on
-   the stage instead, and only adopts the page theme once you scroll past the
-   hero (same device as nav.scrolled on luminary-dev.xyz). The docs page keeps
-   the normal themed header, since its hero follows the page theme. */
+/* Cover page: the header floats over the hero (which supplies its own
+   backdrop), staying transparent until you scroll past it. Colours come from
+   the page theme throughout, so this works in light and dark alike. */
 body.cover .hd {
   position:fixed;left:0;right:0;
   background:transparent;border-bottom-color:transparent;
   backdrop-filter:none;-webkit-backdrop-filter:none;
-  color:#f4f4f5;
-}
-body.cover .hd .hd-crumb-muted { color:#a1a1aa }
-body.cover .hd .hd-div { background:rgba(255,255,255,.18) }
-body.cover .hd .tt {
-  background:rgba(255,255,255,.07);
-  border-color:rgba(255,255,255,.16);
-  box-shadow:none;
 }
 body.cover .hd.scrolled {
   background:color-mix(in srgb,var(--bg) 88%,transparent);
   backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
   border-bottom-color:var(--border);
-  color:var(--text);
-}
-body.cover .hd.scrolled .hd-crumb-muted { color:var(--muted) }
-body.cover .hd.scrolled .hd-div { background:var(--border) }
-body.cover .hd.scrolled .tt {
-  background:var(--off);border-color:var(--border);
-  box-shadow:inset 2px 2px 5px rgba(0,0,0,.12),inset -2px -2px 5px rgba(255,255,255,.6);
-}
-[data-theme="dark"] body.cover .hd.scrolled .tt {
-  box-shadow:inset 2px 2px 6px rgba(0,0,0,.55),inset -2px -2px 6px rgba(255,255,255,.04);
 }
 .hd-mark { font-size:17px;font-weight:800;letter-spacing:-.04em }
 .hd-mark span { color:var(--accent);transition:color .28s }
@@ -202,54 +182,45 @@ body.cover .hd.scrolled .tt {
 .chip::before { content:'';width:5px;height:5px;border-radius:50%;background:var(--accent);flex-shrink:0 }
 
 /* ---------------------------------------------------------- hero
-   The hero is a deliberate dark stage in BOTH themes — the Hyperspeed
-   backdrop is a night-road effect and cannot read on a white page. The
-   dark token values are re-declared here so everything nested inside
-   (copy, buttons, the command pill) keeps correct contrast regardless of
-   the page theme. This is the one intentional theme break on the page. */
+   The hero follows the page theme: light on light, dark on dark. The
+   Hyperspeed backdrop is recoloured per theme in site.js (and its bloom
+   damped in light mode, where additive glow would blow out to white). */
 .hero {
   position:relative;overflow:hidden;
-  /* No hairline here: the dark-stage-to-page colour change IS the divider, and
-     a border using the hero's own (white-ish) token would be invisible in
-     light mode anyway. */
-  border-bottom:none;
-  /* Top padding clears the fixed 60px header, which floats on the stage. */
+  border-bottom:1px solid var(--border);
+  /* Top padding clears the fixed 60px header, which floats over the hero. */
   padding:calc(7.5rem + 60px) 0 6.5rem;
-  background:#05050a;
-  --text:#f4f4f5;
-  --muted:#a1a1aa;
-  --subtle:#52525b;
-  --off:#121216;
-  --border:rgba(255,255,255,.08);
-  --border-hi:rgba(255,255,255,.17);
-  --accent:#a3e635;
-  --a-text:#a3e635;
-  --a-dim:rgba(163,230,53,.1);
-  --a-border:rgba(163,230,53,.26);
-  --on-accent:#0d0d0f;
-  --particle:163,230,53;
-  --t-bg:rgba(255,255,255,.05);
-  --t-bdr:rgba(255,255,255,.13);
-  --t-txt:#f4f4f5;
-  --t-hi:#a3e635;
+  background:var(--bg);
 }
-/* Instant fallback: a road-ish vertical gradient that reads immediately and
+/* Instant fallback: a road-like vertical gradient that reads immediately and
    remains underneath the canvas, so a WebGL failure is never a blank box. */
 .hero::before {
   content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
   background:
+    radial-gradient(120% 80% at 50% 108%, rgba(132,204,22,.18), transparent 62%),
+    linear-gradient(180deg, var(--bg) 0%, var(--off) 62%, #ececE7 100%);
+}
+[data-theme="dark"] .hero::before {
+  background:
     radial-gradient(120% 80% at 50% 108%, rgba(163,230,53,.20), transparent 62%),
     linear-gradient(180deg, #05050a 0%, #07070d 55%, #0b0b12 100%);
 }
+[data-theme="dark"] .hero { background:#05050a }
+
 .hero-fx {
   position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;
   opacity:0;transition:opacity 1.1s ease;
 }
-.hero-fx.ready { opacity:.9 }
+.hero-fx.ready { opacity:.72 }
+[data-theme="dark"] .hero-fx.ready { opacity:.9 }
 .hero-fx canvas { display:block;width:100%;height:100% }
-/* Keeps the headline legible over the brightest part of the effect. */
+/* Keeps the headline legible over the busiest part of the effect — tinted to
+   the page background so it works in both themes. */
 .hero-scrim {
   position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(72% 62% at 50% 42%, rgba(255,255,255,.86), rgba(255,255,255,.42) 58%, transparent 80%);
+}
+[data-theme="dark"] .hero-scrim {
   background:radial-gradient(72% 62% at 50% 42%, rgba(5,5,10,.82), rgba(5,5,10,.35) 58%, transparent 78%);
 }
 .hero-glow {

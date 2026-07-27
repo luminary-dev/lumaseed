@@ -108,9 +108,56 @@
       })();
 
     if (!skip) {
-      var start = function () {
+      // Per-theme palettes. The scene's own background has to match the page,
+      // and in light mode the bloom threshold is raised and its intensity
+      // damped — additive glow over a pale road otherwise washes out to white.
+      var PALETTES = {
+        dark: {
+          bloomThreshold: 0.2,
+          bloomIntensity: 1,
+          colors: {
+            roadColor: 0x05050a,
+            islandColor: 0x07070d,
+            background: 0x05050a,
+            shoulderLines: 0x1c1c22,
+            brokenLines: 0x26262e,
+            leftCars: [0xa3e635, 0x84cc16, 0x65a30d],
+            rightCars: [0x3f3f46, 0x52525b, 0x27272a],
+            sticks: 0xa3e635
+          }
+        },
+        light: {
+          bloomThreshold: 0.75,
+          bloomIntensity: 0.35,
+          colors: {
+            roadColor: 0xe4e4de,
+            islandColor: 0xdcdcd5,
+            background: 0xf7f7f5,
+            shoulderLines: 0xffffff,
+            brokenLines: 0xc9c9c2,
+            leftCars: [0x4d7c0f, 0x65a30d, 0x3f6212],
+            rightCars: [0x64748b, 0x475569, 0x94a3b8],
+            sticks: 0x65a30d
+          }
+        }
+      };
+
+      var app = null;
+      var currentTheme = null;
+
+      var mount = function () {
+        var theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+        if (theme === currentTheme) return;
+        currentTheme = theme;
+        var preset = PALETTES[theme];
+
         import('/assets/hyperspeed.min.js').then(function (mod) {
-          mod.initHyperspeed(fx, {
+          // Tear the old scene down before building the recoloured one, so
+          // toggling the theme repeatedly cannot stack WebGL contexts.
+          if (app) { try { app.dispose(); } catch (e) { /* already gone */ } app = null; }
+          while (fx.firstChild) fx.removeChild(fx.firstChild);
+
+          app = mod.initHyperspeed(fx, {
             distortion: 'turbulentDistortion',
             fov: 90,
             fovSpeedUp: 150,
@@ -118,29 +165,25 @@
             carLightsFade: 0.4,
             totalSideLightSticks: 20,
             lightPairsPerRoadWay: 40,
-            colors: {
-              // Brand palette: lime accent for our lane, cool slate oncoming.
-              roadColor: 0x05050a,
-              islandColor: 0x07070d,
-              background: 0x05050a,
-              shoulderLines: 0x1c1c22,
-              brokenLines: 0x26262e,
-              leftCars: [0xa3e635, 0x84cc16, 0x65a30d],
-              rightCars: [0x3f3f46, 0x52525b, 0x27272a],
-              sticks: 0xa3e635
-            }
+            bloomThreshold: preset.bloomThreshold,
+            bloomIntensity: preset.bloomIntensity,
+            colors: preset.colors
           });
           fx.classList.add('ready');
         }).catch(function () {
-          /* bundle blocked or failed — the gradient is already correct */
+          /* bundle blocked or failed — the CSS gradient is already correct */
         });
       };
+
       // Wait for first paint to finish before pulling ~700KB of WebGL.
       if ('requestIdleCallback' in window) {
-        requestIdleCallback(start, { timeout: 2500 });
+        requestIdleCallback(mount, { timeout: 2500 });
       } else {
-        window.addEventListener('load', function () { setTimeout(start, 400); });
+        window.addEventListener('load', function () { setTimeout(mount, 400); });
       }
+
+      // Rebuild with the other palette when the theme is toggled.
+      if (tt) tt.addEventListener('click', function () { setTimeout(mount, 60); });
     }
   }
 
