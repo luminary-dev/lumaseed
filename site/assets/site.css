@@ -354,7 +354,6 @@ section.band { padding:5.5rem 0;border-bottom:1px solid var(--border) }
 .shot-stats { display:flex;gap:1rem;flex-wrap:wrap;font-family:'JetBrains Mono',monospace;font-size:.66rem;color:var(--muted) }
 
 /* ---------------------------------------------------------- contact */
-.contact-head { max-width:56ch;margin-left:auto;margin-right:auto;text-align:center }
 .contact-grid { align-items:stretch }
 .contact-card {
   display:flex;flex-direction:column;align-items:flex-start;
