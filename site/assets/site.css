@@ -171,6 +171,28 @@ body.cover .hd.scrolled {
 }
 .btn-outline:hover { border-color:var(--accent);color:var(--a-text);transform:translateY(-1px) }
 .btn-outline:active { transform:scale(.97) }
+/* hero "Read the docs" — frosted liquid glass, matching the command panel */
+.hero-ctas .btn-outline {
+  position:relative;overflow:hidden;isolation:isolate;
+  background:color-mix(in srgb, var(--t-bg) 42%, transparent);
+  border-color:color-mix(in srgb, var(--text) 16%, transparent);
+  -webkit-backdrop-filter:blur(16px) saturate(180%);
+  backdrop-filter:blur(16px) saturate(180%);
+  box-shadow:0 10px 30px rgba(0,0,0,.18), inset 0 1px 0 color-mix(in srgb,#fff 35%,transparent);
+}
+.hero-ctas .btn-outline::before {
+  content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(135deg, color-mix(in srgb,#fff 22%,transparent) 0%, transparent 45%),
+             radial-gradient(120% 80% at 0% 0%, color-mix(in srgb,#fff 14%,transparent), transparent 60%);
+}
+[data-theme="dark"] .hero-ctas .btn-outline::before {
+  background:linear-gradient(135deg, color-mix(in srgb,#fff 12%,transparent) 0%, transparent 46%),
+             radial-gradient(120% 80% at 0% 0%, color-mix(in srgb,#fff 8%,transparent), transparent 60%);
+}
+.hero-ctas .btn-outline:hover {
+  border-color:var(--accent);color:var(--a-text);transform:translateY(-1px);
+  box-shadow:0 14px 34px rgba(var(--particle),.26), inset 0 1px 0 color-mix(in srgb,#fff 40%,transparent);
+}
 
 /* ---------------------------------------------------------- chips */
 .chip {
@@ -238,6 +260,14 @@ h1.hero-h1 em { font-style:normal;color:var(--accent);transition:color .28s }
 .hero-lede { font-size:clamp(1rem,1.6vw,1.16rem);color:var(--muted);max-width:60ch;line-height:1.65 }
 .hero-ctas { display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;margin-top:.6rem }
 .hero-note { font-size:.8rem;color:var(--muted);font-family:'JetBrains Mono',monospace }
+/* the localhost address is interactive: colour shift + animated underline on hover */
+.local-link { color:inherit;text-decoration:none;position:relative;padding-bottom:2px;transition:color .22s var(--ease) }
+.local-link::after {
+  content:'';position:absolute;left:0;right:0;bottom:0;height:1.5px;border-radius:2px;
+  background:var(--a-text);transform:scaleX(0);transform-origin:left;transition:transform .3s var(--ease);
+}
+.local-link:hover,.local-link:focus-visible { color:var(--a-text);text-shadow:0 0 14px rgba(var(--particle),.45) }
+.local-link:hover::after,.local-link:focus-visible::after { transform:scaleX(1) }
 
 /* command block */
 .cmd {
@@ -247,8 +277,30 @@ h1.hero-h1 em { font-style:normal;color:var(--accent);transition:color .28s }
   color:var(--t-txt);transition:background .28s,border-color .28s,color .28s;
 }
 .cmd .prompt { color:var(--t-hi);font-weight:700 }
-/* multi-line variant: clone + cd + run, stacked left-aligned */
-.cmd.cmd-multi { align-items:center;gap:1rem;border-radius:14px;padding:.8rem 1.15rem;text-align:left;max-width:100% }
+/* multi-line variant: clone + cd + run, stacked left-aligned inside a
+   frosted "liquid glass" panel that blurs the moving hero backdrop behind it */
+.cmd.cmd-multi {
+  align-items:center;gap:1rem;border-radius:18px;padding:.95rem 1.25rem;
+  text-align:left;max-width:100%;position:relative;overflow:hidden;isolation:isolate;
+  background:color-mix(in srgb, var(--t-bg) 42%, transparent);
+  border:1px solid color-mix(in srgb, var(--text) 14%, transparent);
+  -webkit-backdrop-filter:blur(16px) saturate(180%);
+  backdrop-filter:blur(16px) saturate(180%);
+  box-shadow:
+    0 10px 34px rgba(0,0,0,.20),
+    inset 0 1px 0 color-mix(in srgb, #fff 35%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, #fff 6%, transparent);
+}
+/* glossy sheen sweeping across the top-left, the tell of liquid glass */
+.cmd.cmd-multi::before {
+  content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(135deg, color-mix(in srgb,#fff 22%,transparent) 0%, transparent 42%),
+             radial-gradient(120% 80% at 0% 0%, color-mix(in srgb,#fff 14%,transparent), transparent 60%);
+}
+[data-theme="dark"] .cmd.cmd-multi::before {
+  background:linear-gradient(135deg, color-mix(in srgb,#fff 12%,transparent) 0%, transparent 44%),
+             radial-gradient(120% 80% at 0% 0%, color-mix(in srgb,#fff 8%,transparent), transparent 60%);
+}
 .cmd-lines { display:flex;flex-direction:column;gap:.3rem;min-width:0;overflow-x:auto }
 .cmd-line { display:flex;align-items:baseline;gap:.55rem;white-space:nowrap }
 .cmd-multi .copy { flex:none;align-self:center }
@@ -302,10 +354,15 @@ section.band { padding:5.5rem 0;border-bottom:1px solid var(--border) }
 .shot-stats { display:flex;gap:1rem;flex-wrap:wrap;font-family:'JetBrains Mono',monospace;font-size:.66rem;color:var(--muted) }
 
 /* ---------------------------------------------------------- footer */
-footer { padding:3rem 0;text-align:center;color:var(--muted);font-size:.85rem }
+footer { padding:3.5rem 0;text-align:center;color:var(--muted);font-size:.85rem;border-top:1px solid var(--border) }
 footer a { color:var(--a-text) }
 footer a:hover { text-decoration:underline }
-.ft-links { display:flex;gap:1.4rem;justify-content:center;flex-wrap:wrap;margin-bottom:1rem }
+.ft-brand { font-weight:800;font-size:1.2rem;letter-spacing:-.04em;color:var(--text) }
+.ft-brand span { color:var(--accent) }
+.ft-blurb { max-width:48ch;margin:.6rem auto 1.5rem;color:var(--muted);line-height:1.6;font-size:.9rem }
+.ft-links { display:flex;gap:1.4rem;justify-content:center;flex-wrap:wrap;margin-bottom:.9rem }
+.ft-contacts { display:flex;gap:1.4rem;justify-content:center;flex-wrap:wrap;margin-bottom:1.4rem;font-size:.82rem }
+.ft-fine { margin-top:.5rem;color:var(--muted);opacity:.75;font-size:.78rem }
 
 /* ---------------------------------------------------------- reveal */
 .up { opacity:0;transform:translateY(14px);transition:opacity .6s var(--ease),transform .6s var(--ease) }
