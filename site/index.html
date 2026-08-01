@@ -78,14 +78,17 @@
         <a class="btn btn-outline" href="/docs">Read the docs</a>
       </div>
 
-      <div class="cmd up" style="margin-top:.6rem">
-        <span class="prompt">$</span>
-        <code id="cmd-text">docker compose up -d</code>
-        <button class="copy" id="cmd-copy" aria-label="Copy command" title="Copy">
+      <div class="cmd cmd-multi up" style="margin-top:.6rem">
+        <div class="cmd-lines">
+          <span class="cmd-line"><span class="prompt">$</span><code>git clone https://github.com/luminary-dev/lumaseed.git</code></span>
+          <span class="cmd-line"><span class="prompt">$</span><code>cd lumaseed</code></span>
+          <span class="cmd-line"><span class="prompt">$</span><code id="cmd-text">docker compose up -d</code></span>
+        </div>
+        <button class="copy" id="cmd-copy" aria-label="Copy commands" title="Copy">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>
         </button>
       </div>
-      <p class="hero-note up">then open localhost:3456</p>
+      <p class="hero-note up">then open http://localhost:3456</p>
     </div>
   </section>
 

@@ -22,9 +22,11 @@ That's it. You don't need to know Node.js or install anything else.
 
 ## Getting started
 
-Download this repository, open a terminal in the folder, and run:
+Clone this repository, move into the folder, and start it:
 
 ```bash
+git clone https://github.com/luminary-dev/lumaseed.git
+cd lumaseed
 docker compose up -d
 ```
 

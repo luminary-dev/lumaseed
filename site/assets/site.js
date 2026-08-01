@@ -61,8 +61,18 @@
   var heroCopy = document.getElementById('cmd-copy');
   if (heroCopy) {
     heroCopy.addEventListener('click', function () {
-      var el = document.getElementById('cmd-text');
-      copyText(el ? el.textContent.trim() : '', heroCopy);
+      // Copy every command line (clone, cd, run), newline-joined, prompts stripped.
+      var codes = document.querySelectorAll('.cmd .cmd-line code');
+      var text;
+      if (codes.length) {
+        text = Array.prototype.map.call(codes, function (c) {
+          return c.textContent.trim();
+        }).join('\n');
+      } else {
+        var el = document.getElementById('cmd-text');
+        text = el ? el.textContent.trim() : '';
+      }
+      copyText(text, heroCopy);
     });
   }
 

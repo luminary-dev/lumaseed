@@ -237,7 +237,7 @@ h1.hero-h1 {
 h1.hero-h1 em { font-style:normal;color:var(--accent);transition:color .28s }
 .hero-lede { font-size:clamp(1rem,1.6vw,1.16rem);color:var(--muted);max-width:60ch;line-height:1.65 }
 .hero-ctas { display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;margin-top:.6rem }
-.hero-note { font-size:.8rem;color:var(--subtle);font-family:'JetBrains Mono',monospace }
+.hero-note { font-size:.8rem;color:var(--muted);font-family:'JetBrains Mono',monospace }
 
 /* command block */
 .cmd {
@@ -247,6 +247,11 @@ h1.hero-h1 em { font-style:normal;color:var(--accent);transition:color .28s }
   color:var(--t-txt);transition:background .28s,border-color .28s,color .28s;
 }
 .cmd .prompt { color:var(--t-hi);font-weight:700 }
+/* multi-line variant: clone + cd + run, stacked left-aligned */
+.cmd.cmd-multi { align-items:center;gap:1rem;border-radius:14px;padding:.8rem 1.15rem;text-align:left;max-width:100% }
+.cmd-lines { display:flex;flex-direction:column;gap:.3rem;min-width:0;overflow-x:auto }
+.cmd-line { display:flex;align-items:baseline;gap:.55rem;white-space:nowrap }
+.cmd-multi .copy { flex:none;align-self:center }
 .copy {
   background:none;border:none;cursor:pointer;color:var(--muted);
   display:inline-flex;padding:2px;transition:color .2s;
