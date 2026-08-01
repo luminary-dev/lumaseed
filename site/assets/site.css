@@ -353,6 +353,29 @@ section.band { padding:5.5rem 0;border-bottom:1px solid var(--border) }
 .shot-bar-fill { display:block;height:100%;border-radius:100px;background:var(--accent);box-shadow:0 0 10px 0 rgba(var(--particle),.55) }
 .shot-stats { display:flex;gap:1rem;flex-wrap:wrap;font-family:'JetBrains Mono',monospace;font-size:.66rem;color:var(--muted) }
 
+/* ---------------------------------------------------------- contact */
+.contact-head { max-width:56ch;margin-left:auto;margin-right:auto;text-align:center }
+.contact-grid { align-items:stretch }
+.contact-card {
+  display:flex;flex-direction:column;align-items:flex-start;
+  background:var(--off);border:1px solid var(--border);border-radius:var(--r);
+  padding:1.9rem;box-shadow:var(--sh);color:var(--text);text-decoration:none;
+  transition:background .28s,border-color .3s var(--ease),transform .32s var(--ease),box-shadow .32s var(--ease);
+}
+.contact-card:hover { border-color:var(--a-border);transform:translateY(-3px);box-shadow:var(--sh-md) }
+.contact-card .ico {
+  width:38px;height:38px;border-radius:11px;margin-bottom:1.1rem;
+  background:var(--a-dim);border:1px solid var(--a-border);
+  display:flex;align-items:center;justify-content:center;color:var(--a-text);
+}
+.contact-card .ico svg { width:19px;height:19px }
+.contact-card h3 { font-size:1.12rem;font-weight:700;letter-spacing:-.015em;margin-bottom:.4rem }
+.contact-card p { color:var(--muted);font-size:.9rem;line-height:1.6;margin-bottom:1rem }
+.contact-val { font-size:.82rem;color:var(--text);margin-top:auto }
+.contact-go { display:inline-flex;align-items:center;gap:.35rem;margin-top:.9rem;font-size:.85rem;font-weight:600;color:var(--a-text) }
+.contact-go svg { width:14px;height:14px;transition:transform .25s var(--ease) }
+.contact-card:hover .contact-go svg { transform:translateX(3px) }
+
 /* ---------------------------------------------------------- footer */
 footer { padding:3.5rem 0;text-align:center;color:var(--muted);font-size:.85rem;border-top:1px solid var(--border) }
 footer a { color:var(--a-text) }
@@ -360,8 +383,7 @@ footer a:hover { text-decoration:underline }
 .ft-brand { font-weight:800;font-size:1.2rem;letter-spacing:-.04em;color:var(--text) }
 .ft-brand span { color:var(--accent) }
 .ft-blurb { max-width:48ch;margin:.6rem auto 1.5rem;color:var(--muted);line-height:1.6;font-size:.9rem }
-.ft-links { display:flex;gap:1.4rem;justify-content:center;flex-wrap:wrap;margin-bottom:.9rem }
-.ft-contacts { display:flex;gap:1.4rem;justify-content:center;flex-wrap:wrap;margin-bottom:1.4rem;font-size:.82rem }
+.ft-links { display:flex;gap:1.4rem;justify-content:center;flex-wrap:wrap;margin-bottom:1.4rem }
 .ft-fine { margin-top:.5rem;color:var(--muted);opacity:.75;font-size:.78rem }
 
 /* ---------------------------------------------------------- reveal */
