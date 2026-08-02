@@ -1,0 +1,49 @@
+name: Deploy site to Vercel
+
+# Deploys the static marketing site in site/ to Vercel production whenever
+# site/** changes on main. Can also be run by hand from the Actions tab.
+#
+# Requires (set once in the repo settings):
+#   - Actions variable  VERCEL_ORG_ID      (team/org id)
+#   - Actions variable  VERCEL_PROJECT_ID  (lumaseed project id)
+#   - Actions secret     VERCEL_TOKEN      (create at vercel.com/account/tokens)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+  workflow_dispatch:
+
+concurrency:
+  group: vercel-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: site
+    env:
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Pull Vercel project settings
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Build
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+
+      - name: Deploy to production
+        run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
